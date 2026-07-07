@@ -22,47 +22,38 @@ def discover() -> None:
     click.echo(run_discovery().to_display_text())
 
 
-@main.command()
+@main.group(invoke_without_command=True)
+@click.pass_context
 @click.argument("query", required=False)
 @click.option("--json", "as_json", is_flag=True, help="Output as JSON.")
-def ai(query: str | None = None, as_json: bool = False) -> None:
-    """AI-powered diagnostics assistant."""
-    from zenith.ai.intent import parse_intent
-    from zenith.engines.diagnostics import DiagnosticsEngine
-    from zenith.knowledge.knowledge_base import get_knowledge_base
-
-    kb = get_knowledge_base()
-    engine = DiagnosticsEngine(kb)
-    if query:
-        intent = parse_intent(query)
-        click.echo(f"Intent: {intent.type.value} (confidence: {intent.confidence:.0%})")
-        if intent.target_symptom:
-            click.echo(f"Symptom: {intent.target_symptom}")
-        if intent.target_soc:
-            click.echo(f"SoC: {intent.target_soc}")
-        result = engine.diagnose([intent.target_symptom or query])
-        if as_json:
-            click.echo(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
+def ai(ctx: click.Context, query: str | None = None, as_json: bool = False) -> None:
+    """AI diagnostics assistant. Use 'ai ask <query>' or 'ai index'."""
+    if ctx.invoked_subcommand is None:
+        if query:
+            from zenith.ai.intent import parse_intent
+            from zenith.engines.diagnostics import DiagnosticsEngine
+            from zenith.knowledge.knowledge_base import get_knowledge_base
+            kb = get_knowledge_base()
+            engine = DiagnosticsEngine(kb)
+            intent = parse_intent(query)
+            click.echo(f"Intent: {intent.type.value} (confidence: {intent.confidence:.0%})")
+            if intent.target_symptom:
+                click.echo(f"Symptom: {intent.target_symptom}")
+            if intent.target_soc:
+                click.echo(f"SoC: {intent.target_soc}")
+            result = engine.diagnose([intent.target_symptom or query])
+            if as_json:
+                import json as _json
+                click.echo(_json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
+            else:
+                click.echo(f"\nDiagnosis: {result.diagnosis}")
+                click.echo(f"Risk: {result.risk_level}")
+                if result.tests:
+                    click.echo("\nTests:" + "\n  - " + "\n  - ".join(result.tests))
+                if result.fixes:
+                    click.echo("\nFixes:" + "\n  - " + "\n  - ".join(result.fixes))
         else:
-            click.echo(f"\nDiagnosis: {result.diagnosis}")
-            click.echo(f"Risk level: {result.risk_level}")
-            if result.tests:
-                click.echo("\nSuggested tests:")
-                for t in result.tests:
-                    click.echo(f"  - {t}")
-            if result.fixes:
-                click.echo("\nRecommended actions:")
-                for f in result.fixes:
-                    click.echo(f"  - {f}")
-            if result.suggested_playbooks:
-                click.echo("\nMatching playbooks:")
-                for pid in result.suggested_playbooks:
-                    pb = kb.get_playbook(pid)
-                    if pb:
-                        click.echo(f"  - {pb.title} ({pid})")
-    else:
-        click.echo("Usage: zenith ai <query>")
-        click.echo("Example: zenith ai \"my phone is in a bootloop\"")
+            click.echo("Usage: zenith ai <query> or zenith ai ask <query> or zenith ai index")
 
 
 @main.command()
@@ -149,7 +140,62 @@ def arsenal(as_json: bool = False) -> None:
 
 
 @main.command()
+@click.argument("firmware_dir")
+@click.option("--device", type=str, default="auto", help="Device ID.")
+@click.option("--dry-run", is_flag=True, help="Plan only, no execution.")
+@click.option("--partition", multiple=True, help="Target partitions.")
+def flash(firmware_dir: str, device: str = "auto", dry_run: bool = False, partition: list[str] | None = None) -> None:
+    """Flash firmware partitions via EDL/BROM/Fastboot."""
+    from zenith.engines.flash import FlashEngine
+    engine = FlashEngine()
+    plan = engine.plan(device, firmware_dir, list(partition) if partition else None)
+    plan.dry_run = dry_run
+    click.echo(f"Flash plan: {len(plan.target_partitions)} partitions")
+    for s in plan.steps:
+        click.echo(f"  [{s.kind.value}] {s.partition}")
+    if dry_run:
+        click.echo("DRY-RUN — no commands executed")
+    else:
+        result = engine.execute(plan)
+        if result.success:
+            click.echo("Flash completed successfully")
+        else:
+            click.echo(f"Flash failed: {result.error}")
+
+
+@ai.command("index")
+def ai_index() -> None:
+    """Index DEEP_ATLAS into ChromaDB vector database."""
+    from zenith.knowledge.knowledge_base import get_knowledge_base
+    kb = get_knowledge_base()
+    from zenith.ai.rag import RAGEngine
+    rag = RAGEngine()
+    if not rag.is_available():
+        click.echo("ChromaDB not available. Install: pip install chromadb sentence-transformers")
+        return
+    n = rag.index_atlas(kb.parser)
+    click.echo(f"Indexed {n} chunks into ChromaDB ({rag.collection_name})")
+
+
+@ai.command("ask")
+@click.argument("query")
+def ai_ask(query: str) -> None:
+    """Search the knowledge base using semantic search."""
+    from zenith.ai.rag import RAGEngine
+    rag = RAGEngine()
+    results = rag.search(query)
+    if not results:
+        click.echo("No results found.")
+    for r in results:
+        click.echo(f"[score={r.get('score', '?'):.3f}] {r.get('text', '')[:200]}")
+        meta = r.get('metadata', {})
+        if meta:
+            click.echo(f"       {', '.join(f'{k}={v}' for k, v in meta.items())}")
+
+
+@main.command()
 def repairs() -> None:
+    """List available repair actions."""
     """List available repair actions."""
     from zenith.engines.repair import RepairEngine, RepairType
     engine = RepairEngine()
