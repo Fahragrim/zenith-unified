@@ -1,0 +1,34 @@
+id: sony-xz2-frp-newflasher
+title: Sony XZ2 H8266 FRP Bypass — Newflasher persistent partition wipe
+symptom: frp-lock
+soc: sony
+compatibility: ["XZ2", "H8266"]
+risk_level: high
+prerequisites: ["Stock firmware downloaded and extracted", "Newflasher v55+ installed at ~/newflasher/", "Device in flash mode (Volume Down + USB)"]
+required_tools: ["newflasher"]
+steps:
+- step_number: 1
+  description: Place device into flash mode
+  details: Power off, hold Volume Down, connect USB. Device should appear as Sony flash device.
+- step_number: 2
+  description: Run Newflasher with flash mode detection
+  details: Newflasher will detect device automatically when in flash mode
+  command: newflasher:--list
+- step_number: 3
+  description: Answer YES to format all partitions including persistent
+  details: When prompted by Newflasher to format persistent partition, type YES
+  command: newflasher:--format-persistent
+- step_number: 4
+  description: Flash stock firmware partitions
+  details: Follow Newflasher prompts to flash all firmware files in the extracted folder
+  command: newflasher:--flash-all
+- step_number: 5
+  description: Reboot device after flash completes
+  command: fastboot:reboot
+expected_results: ["Device boots with stock firmware and no FRP lock"]
+troubleshooting:
+  "Newflasher not detected": "Ensure newflasher.exe is on PATH or in ~/newflasher/"
+  "Flash fails": "Try different USB port (USB 2.0 recommended). Disable driver signature enforcement on Windows."
+  "Persistent partition error": "Some firmware revisions rename persistent — use `--format-all` as fallback"
+success_rate: 85
+last_verified: null

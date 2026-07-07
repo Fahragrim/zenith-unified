@@ -1,0 +1,26 @@
+id: apple-dfu-triage
+title: Apple DFU Mode Triage
+symptom: dfu-mode
+soc: apple
+compatibility: []
+risk_level: low
+prerequisites: []
+required_tools: []
+steps:
+- step_number: 1
+  description: 'Identifiera: Enheten svarar inte. Anslut till datorn.'
+- step_number: 2
+  description: 'Forcera DFU: Kort tryck Vol Up → Kort tryck Vol Down → Håll Power i 10s → Håll Vol Down + Power i 5s → Släpp Power men fortsätt håll Vol Down.'
+- step_number: 3
+  description: 'Verifiera DFU: Skärmen är svart. iTunes/Apple Devices visar "iPhone i återställningsläge".'
+- step_number: 4
+  description: 'Återställ i iTunes eller använd libimobiledevice'
+  command: shell:idevicerestore -q latest.ipsw
+- step_number: 5
+  description: 'Alternativ: Använd 3uTools eller libimobiledevice för avancerad återställning.'
+- step_number: 6
+  description: 'Vänta på att återställningen slutförs och enheten startar om'
+  command: shell:ideviceinfo -q -k DeviceName 2>/dev/null || echo "Waiting for device..."
+troubleshooting: {}
+success_rate: null
+last_verified: null

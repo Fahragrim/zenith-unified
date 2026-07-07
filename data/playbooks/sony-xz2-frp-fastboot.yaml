@@ -1,0 +1,30 @@
+id: sony-xz2-frp-fastboot
+title: Sony XZ2 H8266 FRP Bypass — FRP partition reset (fastboot)
+symptom: frp-lock
+soc: sony
+compatibility: ["XZ2", "H8266"]
+risk_level: medium
+prerequisites: ["Device must be in bootloader mode", "Bootloader may need to be unlocked"]
+required_tools: ["adb", "fastboot"]
+steps:
+- step_number: 1
+  description: Reboot device into bootloader mode
+  command: adb:reboot bootloader
+- step_number: 2
+  description: Wait for device in fastboot mode
+  details: Verify with `fastboot devices`
+  command: fastboot:devices
+- step_number: 3
+  description: Erase FRP partition to clear Factory Reset Protection flag
+  details: This removes the FRP flag that persists across factory resets
+  command: fastboot:erase FRP
+- step_number: 4
+  description: Reboot device out of bootloader
+  command: fastboot:reboot
+expected_results: ["Device reboots without FRP lock"]
+troubleshooting:
+  "fastboot: unknown command": "Bootloader may be locked — unlock via Sony unlock site first"
+  "FAILED (remote: 'unknown command')": "FRP partition may be named differently — try `fastboot getvar all` to list partitions"
+  "No fastboot access": "Hold Volume Up while connecting USB in bootloader mode"
+success_rate: 25
+last_verified: null

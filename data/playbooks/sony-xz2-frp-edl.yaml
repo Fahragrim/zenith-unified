@@ -1,0 +1,33 @@
+id: sony-xz2-frp-edl
+title: Sony XZ2 H8266 FRP Bypass — Test Point / EDL mode
+symptom: frp-lock
+soc: sony
+compatibility: ["XZ2", "H8266"]
+risk_level: critical
+prerequisites: ["Device must be opened (remove back cover)", "Test point location identified on motherboard", "EDL cable or wire for shorting", "QPST or EDL tool installed"]
+required_tools: ["edl"]
+steps:
+- step_number: 1
+  description: Open device and locate test point on motherboard
+  details: XZ2 H8266 uses Qualcomm SDM845 — test point is near the EMI shield corner. Short test point to ground.
+- step_number: 2
+  description: Connect USB while shorting test point to enter EDL mode
+  details: Device should appear as Qualcomm HS-USB QDLoader 9008 in Device Manager
+  command: edl:--detect
+- step_number: 3
+  description: Read current partition table via EDL
+  command: edl:gpt
+- step_number: 4
+  description: Wipe userdata partition to clear FRP
+  details: This formats the userdata partition which stores the FRP flag
+  command: edl:w z --partition=userdata
+- step_number: 5
+  description: Reboot device from EDL mode
+  command: edl:reset
+expected_results: ["Device reboots without FRP lock"]
+troubleshooting:
+  "No EDL detection": "Verify test point is correctly shorted. Try different USB port. Install Qualcomm drivers."
+  "Cannot write partition": "Firehose programmer may not be available for this device variant"
+  "Device not recognized": "Install QDLoader 9008 drivers (Qualcomm USB drivers)"
+success_rate: 90
+last_verified: null

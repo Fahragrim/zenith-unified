@@ -1,0 +1,49 @@
+id: nokia-c32-frp-bypass
+title: Nokia C32 TA-1534 FRP Bypass — Unisoc SC9863A1 FDL/EDL reset
+symptom: frp-lock
+soc: unisoc
+compatibility: ["C32", "TA-1534", "SC9863A1"]
+risk_level: high
+prerequisites:
+  - "Device in SPRD Upgrade Mode (VID 0x1782, PID 0x4D00)"
+  - "USB cable connected, device powered off"
+  - "pyusb installed (pip install pyusb)"
+  - "FDL1 + FDL2 firmware files for SC9863A1 extracted from .pac"
+  - "libusb driver installed (Windows: Zadig, Linux: udev rules)"
+required_tools: ["pyusb"]
+steps:
+- step_number: 1
+  description: Power off device completely
+  details: Hold Power button for 10+ seconds to ensure full shutdown
+- step_number: 2
+  description: Enter SPRD Upgrade Mode
+  details: Connect USB cable while holding Volume Up. Device appears as Unisoc SPRD (VID 0x1782, PID 0x4D00)
+  command: shell:echo "Connect device in SPRD mode"
+- step_number: 3
+  description: Load FDL1 into device RAM
+  details: FDL1 initializes DRAM and USB communication
+  command: edl:--sprd-fdl1
+- step_number: 4
+  description: Load FDL2 for partition access
+  details: FDL2 provides MMC block read/write via Socrates protocol
+  command: edl:--sprd-fdl2
+- step_number: 5
+  description: Read partition table to locate userdata
+  command: edl:--sprd-gpt
+- step_number: 6
+  description: Erase userdata partition to clear FRP flag
+  details: FRP flag is stored in /data partition — erasing userdata removes it
+  command: edl:--sprd-erase userdata
+- step_number: 7
+  description: Reboot device
+  command: edl:--sprd-reset
+expected_results:
+  - "Device reboots without FRP lock"
+  - "Setup wizard allows skipping Google account"
+troubleshooting:
+  "Device not detected": "Install libusb drivers via Zadig. Verify VID/PID 0x1782/0x4D00 in Device Manager."
+  "FDL1 upload fails": "Check that FDL1 binary matches SC9863A1. Download correct .pac file for Nokia C32."
+  "FDL2 not responding": "FDL2 may need different load address. Try ResearchDownload or SPD Flash Tool instead."
+  "Cannot erase partition": "Try `--sprd-format-all` as fallback (wipes ALL partitions including persist)"
+success_rate: 75
+last_verified: null

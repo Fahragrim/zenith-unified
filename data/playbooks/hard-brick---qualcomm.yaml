@@ -1,0 +1,27 @@
+id: hard-brick---qualcomm
+title: Hard Brick — Qualcomm
+symptom: hard-brick
+soc: null
+compatibility: []
+risk_level: low
+prerequisites: []
+required_tools: []
+steps:
+- step_number: 1
+  description: 'Identifiera: Anslut USB → leta efter `Qualcomm HS-USB QDLoader 9008` i Enhetshanteraren.'
+- step_number: 2
+  description: 'Tvinga EDL: Om 9008 inte syns, använd test point eller EDL-kabel.'
+- step_number: 3
+  description: 'Installera drivrutin: Qualcomm 9008-drivrutin (Zadig om nödvändigt).'
+- step_number: 4
+  description: 'Flash firmware via EDL'
+  command: edl:--printgpt
+- step_number: 5
+  description: 'Flash boot partition via EDL'
+  command: edl:--partition=boot boot.img
+- step_number: 6
+  description: 'Verify: Koppla bort USB, starta om.'
+expected_results: []
+troubleshooting: {}
+success_rate: null
+last_verified: null

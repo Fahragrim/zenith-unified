@@ -1,0 +1,25 @@
+id: mtk-brom-bypass
+title: MTK BROM Bypass (SLA/DAA)
+symptom: brom-access
+soc: mediatek
+compatibility: []
+risk_level: medium
+prerequisites: []
+required_tools: []
+steps:
+- step_number: 1
+  description: 'Installera Python och mtkclient: pip install mtkclient'
+- step_number: 2
+  description: 'Slå av enheten helt. Håll Vol Up + Vol Down.'
+- step_number: 3
+  description: 'Anslut USB medan du håller volymknapparna.'
+- step_number: 4
+  description: 'Kör mtkclient payload — bypassar SLA/DAA-autentisering'
+  command: shell:python -m mtkclient payload
+- step_number: 5
+  description: 'Verifiera anslutning via printgpt'
+  command: shell:python -m mtkclient printgpt
+expected_results: []
+troubleshooting: {}
+success_rate: null
+last_verified: null

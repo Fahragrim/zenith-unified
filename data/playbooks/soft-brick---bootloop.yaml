@@ -1,0 +1,27 @@
+id: soft-brick-/-bootloop
+title: Soft Brick / Bootloop
+symptom: bootloop
+soc: null
+compatibility: []
+risk_level: low
+prerequisites: []
+required_tools: []
+steps:
+- step_number: 1
+  description: 'Försök Recovery Mode'
+  command: adb:reboot recovery
+- step_number: 2
+  description: 'Wipe cache partition via recovery'
+  command: adb_shell:wipe cache
+- step_number: 3
+  description: 'Om det inte fungerar: flash boot partition via fastboot'
+  command: fastboot:flash boot boot.img
+- step_number: 4
+  description: 'Starta om efter flash'
+  command: fastboot:reboot
+- step_number: 5
+  description: 'Om fastboot inte fungerar: gå till Hard Brick-procedur'
+expected_results: []
+troubleshooting: {}
+success_rate: null
+last_verified: null

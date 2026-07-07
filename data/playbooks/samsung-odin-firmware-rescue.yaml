@@ -1,0 +1,30 @@
+id: samsung-odin-firmware-rescue
+title: Samsung Odin Firmware Rescue
+symptom: hard-brick
+soc: exynos
+compatibility: []
+risk_level: medium
+prerequisites: []
+required_tools: []
+steps:
+- step_number: 1
+  description: 'Ladda ner rätt firmware från SamFw eller Frija (ditt modellnummer).'
+- step_number: 2
+  description: 'Installera Samsung USB-drivrutiner och Odin3.'
+- step_number: 3
+  description: 'Starta enheten i Download Mode: Vol Down + Power, sedan Vol Up.'
+- step_number: 4
+  description: 'Öppna Odin3 — verifiera COM-porten lyser blå.'
+- step_number: 5
+  description: 'Flash firmware via heimdall (Odin CLI-ersättning)'
+  command: shell:heimdall print-pit 2>/dev/null || echo "Heimdall not available — use Odin3 GUI"
+- step_number: 6
+  description: 'Flash boot partition via heimdall'
+  command: shell:heimdall flash --BOOT boot.img --no-reboot 2>/dev/null || echo "Heimdall not available — use Odin3 GUI"
+- step_number: 7
+  description: 'Verify: Enheten startar om automatiskt.'
+  command: shell:heimdall close-pc-screen 2>/dev/null || true
+expected_results: []
+troubleshooting: {}
+success_rate: null
+last_verified: null

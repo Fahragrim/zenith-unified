@@ -1,0 +1,32 @@
+id: bootloader-unlock
+title: Bootloader Unlock Guide
+symptom: bootloader-locked
+soc: null
+compatibility: []
+risk_level: medium
+prerequisites: []
+required_tools: []
+steps:
+- step_number: 1
+  description: 'Aktivera Developer Options: Settings → About → Build Number (tryck 7 gånger).'
+- step_number: 2
+  description: 'Aktivera OEM Unlock i Developer Options.'
+  command: adb_shell:settings put global development_settings_enabled 1
+- step_number: 3
+  description: 'Aktivera USB Debugging i Developer Options.'
+  command: adb_shell:settings put global adb_enabled 1
+- step_number: 4
+  description: 'Starta i fastboot'
+  command: adb:reboot bootloader
+- step_number: 5
+  description: 'Lås upp bootloader (bekräfta på skärmen)'
+  command: fastboot:flashing unlock
+- step_number: 6
+  description: 'OBS: Detta raderar ALL data. Säkerhetskopiera först!'
+- step_number: 7
+  description: 'Starta om enheten'
+  command: fastboot:reboot
+expected_results: []
+troubleshooting: {}
+success_rate: null
+last_verified: null

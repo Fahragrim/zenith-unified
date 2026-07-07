@@ -1,0 +1,30 @@
+id: frp-bypass
+title: FRP Bypass (Factory Reset Protection)
+symptom: frp-lock
+soc: null
+compatibility: []
+risk_level: medium
+prerequisites: []
+required_tools: []
+steps:
+- step_number: 1
+  description: 'Identifiera Android-versionen. FRP-metoder varierar per version.'
+- step_number: 2
+  description: 'För Android 5-7: Använd SamFw Tool eller Octoplus (betald).'
+- step_number: 3
+  description: 'För Android 8-10: Testa talkback-bypass eller kombinationsfil via Odin.'
+- step_number: 4
+  description: 'För Android 11+: hårdvarubaserade metoder krävs (EDL/BROM → format userdata).'
+- step_number: 5
+  description: 'Radera userdata via EDL (Qualcomm)'
+  command: edl:w z --partition=userdata
+- step_number: 6
+  description: 'Radera userdata via BROM (MediaTek)'
+  command: shell:python -m mtkclient e userdata
+- step_number: 7
+  description: 'Starta om enheten'
+  command: fastboot:reboot
+expected_results: []
+troubleshooting: {}
+success_rate: null
+last_verified: null

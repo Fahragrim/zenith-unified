@@ -1,0 +1,27 @@
+id: hard-brick---mediatek
+title: Hard Brick — MediaTek
+symptom: hard-brick
+soc: null
+compatibility: []
+risk_level: low
+prerequisites: []
+required_tools: []
+steps:
+- step_number: 1
+  description: 'Identifiera: Anslut USB → leta efter `MediaTek PreLoader USB VCOM` i Enhetshanteraren.'
+- step_number: 2
+  description: 'Tvinga BROM: Håll Vol Up + Vol Down, anslut USB.'
+- step_number: 3
+  description: 'Installera drivrutin: SP Flash Tool eller MTK VCOM-drivrutin (Zadig om nödvändigt).'
+- step_number: 4
+  description: 'Verifiera anslutning via mtkclient'
+  command: shell:python -m mtkclient printgpt 2>/dev/null || echo "mtkclient not available — check drivers"
+- step_number: 5
+  description: 'Flash firmware med mtkclient'
+  command: shell:python -m mtkclient w boot boot.img 2>/dev/null || echo "Requires boot.img from stock firmware"
+- step_number: 6
+  description: 'Verify: Koppla bort USB, starta om (försök Recovery Mode först).'
+expected_results: []
+troubleshooting: {}
+success_rate: null
+last_verified: null

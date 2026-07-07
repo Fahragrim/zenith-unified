@@ -1,0 +1,29 @@
+id: sony-xz2-frp-adb
+title: Sony XZ2 H8266 FRP Bypass — Google account removal (ADB)
+symptom: frp-lock
+soc: sony
+compatibility: ["XZ2", "H8266"]
+risk_level: medium
+prerequisites: ["Device must be in Android (booted) mode", "ADB debugging must be enabled"]
+required_tools: ["adb"]
+steps:
+- step_number: 1
+  description: List Google packages to verify GMS presence
+  command: adb_shell:pm list packages | grep google
+- step_number: 2
+  description: Disable Google Play Services to break FRP activation
+  details: This forces the setup wizard to skip Google account verification on reboot
+  command: adb_shell:pm disable-user --user 0 com.google.android.gms
+- step_number: 3
+  description: Reboot device into normal mode
+  command: adb_shell:reboot
+- step_number: 4
+  description: After reboot, set up without Google account
+  details: Skip WiFi and Google account when prompted during setup
+expected_results: ["Device boots past FRP lock without Google account prompt"]
+troubleshooting:
+  "GMS not found": "Package may be named differently — try `adb shell pm list packages | grep -i google`"
+  "Can't disable": "Try `adb shell pm uninstall -k --user 0 com.google.android.gms` instead"
+  "No ADB access": "Device must have USB debugging enabled in Developer Options"
+success_rate: 40
+last_verified: null
