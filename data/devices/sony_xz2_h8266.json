@@ -1,0 +1,647 @@
+{
+  "id": "sony_xz2_h8266",
+  "manufacturer": "Sony",
+  "model": "Xperia XZ2 Dual H8266",
+  "codename": "akari",
+  "soc_vendor": "Qualcomm",
+  "soc_name": "Snapdragon 845 (SDM845)",
+  "android_version": "Android 8-10",
+  "storage_type": "UFS (SKhynix H28S7Q302BMR, A002)",
+  "bootloader_locked": true,
+  "metadata": {
+    "bootloader_version": "1310-7079_X_Boot_SDM845_LA2.0.1_Q_207",
+    "loader_version": "XFL-SDM845-O-25",
+    "sake_root": "B7DF",
+    "s1_root": "S1_Root_e090",
+    "root_key_hash": "C8D92A2DBA1482588EFF712963329500AC7155CEA8494FDD4B7B180F2F871801",
+    "security_state": "U0vSz8eM1gk1FZup2A6hQlhcZnS9ZR3Up1pg2aPJewY=",
+    "serialno_prefix": "QV703ELA1E",
+    "max_download_size": 104857600,
+    "sector_size": 4096,
+    "slot_count": 2,
+    "boot_chain": "PBL → XBL → ABL → Linux Kernel",
+    "screen_broken": true,
+    "talkback_active": true,
+    "youkiloon_cable": true,
+    "usb_otg_working": true,
+    "wifi_working": true
+  },
+  "modes": [
+    {
+      "name": "edl",
+      "display_name": "Emergency Download Mode (EDL / 9008)",
+      "usb_ids": [
+        {"vid": 1478, "pid": 36872}
+      ],
+      "port_description_patterns": ["9008", "QDLoader", "Qualcomm HS-USB"],
+      "entry_methods": [
+        "Youkiloon UMF cable — välj EDL/9008-läge, håll power 3-5s tills skärm svart",
+        "Test points under selfie camera — kortslut TP-A + TP-B medan USB ansluts",
+        "adb reboot edl (om Android-åtkomst finns)",
+        "Deep Flash Cable — kortslut D+ till GND via 10kΩ motstånd",
+        "fastboot oem edl (om bootloader upplåst)"
+      ],
+      "exit_methods": [
+        "Power button hold 10s",
+        "fastboot reboot (via edl tool)",
+        "Batteri frånkoppla + återanslut"
+      ],
+      "tools": ["edl (bkerler)", "QFIL", "QPST", "Miracle Box", "UFi Box", "Chimera Tool"],
+      "description": "Qualcomm EDL ger full åtkomst till UFS via Sahara + Firehose-protokoll. SAKE (S1 Root B7DF) blockerar EDL på detaljhandelsenheter — kräver Youkiloon V2 eller testpunkter för bypass."
+    },
+    {
+      "name": "flashmode",
+      "display_name": "Sony Flashmode (S1 Protocol)",
+      "usb_ids": [
+        {"vid": 4046, "pid": 44517}
+      ],
+      "port_description_patterns": ["S1", "Sony SA0001", "Flash Device", "0FCE:ADE5"],
+      "entry_methods": [
+        "Stäng av enhet → Håll Volym Ner + anslut USB",
+        "adb reboot bootloader (går till fastboot, ej flashmode)"
+      ],
+      "exit_methods": [
+        "Power button hold 10s",
+        "newflasher/slta avslutar automatiskt"
+      ],
+      "tools": ["newflasher", "Emma (Sony PC Companion)", "Flashtool", "S1 Tool", "XperiFirm"],
+      "description": "Sony proprietärt S1-protokoll. Sonys motsvarighet till EDL. USB VID 0x0FCE, PID 0xADE5. Kräver Sony S1-driver (medföljer PC Companion)."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot / Bootloader",
+      "usb_ids": [
+        {"vid": 4046, "pid": 3550}
+      ],
+      "port_description_patterns": ["fastboot", "0FCE:0DDE", "Sony"],
+      "entry_methods": [
+        "adb reboot bootloader",
+        "Volym Ner + Power vid uppstart",
+        "Från EDL: edl reboot bootloader"
+      ],
+      "exit_methods": [
+        "fastboot reboot",
+        "fastboot continue",
+        "Power button hold 10s"
+      ],
+      "tools": ["fastboot", "Flashtool"],
+      "description": "Standard Android fastboot-läge. VID 0x0FCE, PID 0x0DDE. Bootloader är LÅST på denna enhet (Unlocked: no, Secure: yes)."
+    },
+    {
+      "name": "diag",
+      "display_name": "Qualcomm Diag Mode (9006/901D)",
+      "usb_ids": [
+        {"vid": 1478, "pid": 36870},
+        {"vid": 1478, "pid": 36925}
+      ],
+      "port_description_patterns": ["9006", "901D", "Diagnostic", "Diag Port"],
+      "entry_methods": [
+        "setprop persist.usb.eng 1 (kräver root)",
+        "USB-inställningar via *#0808# (Samsung-kod, ej bekräftad på Sony)",
+        "QPST Configuration tool"
+      ],
+      "exit_methods": [
+        "setprop persist.usb.eng 0",
+        "Reboot"
+      ],
+      "tools": ["QPST", "QXDM", "EFS Professional"],
+      "description": "Seriellt kommunikationsläge över USB. Port 9006/901D. Används för NVRAM/IMEI, RF-kalibrering, QCN-backup. Kräver root för aktivering på Sony."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB (USB Debugging)",
+      "usb_ids": [],
+      "port_description_patterns": ["ADB", "Android"],
+      "entry_methods": [
+        "Aktivera USB-debugging i Utvecklaralternativ",
+        "Anslut USB → acceptera RSA-prompt på enhet"
+      ],
+      "exit_methods": [
+        "adb disconnect",
+        "Stäng av USB-debugging"
+      ],
+      "tools": ["adb", "scrcpy"],
+      "description": "Normalt systemläge med USB-debugging aktiverat. Krävs för ADB-baserade FRP-metoder."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery Mode",
+      "usb_ids": [],
+      "port_description_patterns": ["recovery"],
+      "entry_methods": [
+        "adb reboot recovery",
+        "Volym Upp + Power vid uppstart"
+      ],
+      "exit_methods": ["Reboot system now"],
+      "tools": ["adb"],
+      "description": "Android Recovery för fabriksåterställning och OTA-uppdateringar."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "edl_youkiloon",
+      "name": "EDL + Youkiloon UMF-kabel + QFIL",
+      "category": "EDL",
+      "success_rate": 0.95,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Youkiloon UMF-kabel (stödjer EDL/9008)",
+        "Windows PC med Qualcomm 9008-drivrutin",
+        "QFIL installerat",
+        "H8266 firehose/loader-filer",
+        "FRP-borttagningsfiler för H8266"
+      ],
+      "steps": [
+        {"step": 1, "description": "Anslut Youkiloon-kabeln till datorn"},
+        {"step": 2, "description": "Välj EDL/9008-läge med kabelns 6-knappsväljare"},
+        {"step": 3, "description": "Stäng av enheten helt (håll power 10s+ tills vibration)"},
+        {"step": 4, "description": "Anslut Youkiloon till USB-C på telefonen"},
+        {"step": 5, "description": "Håll power-knappen 3-5 sekunder, släpp när skärmen blir svart"},
+        {"step": 6, "description": "Vänta 5 sekunder, kontrollera Enhetshanteraren för 'Qualcomm HS-USB QDLoader 9008'"},
+        {"step": 7, "description": "Öppna QFIL, ladda firehose: prog_firehose_ddr_8998_SDM845_207.mbn"},
+        {"step": 8, "description": "Ladda rawprogram0_H8266.xml och patch0_H8266.xml"},
+        {"step": 9, "description": "Klicka Download/Flash — FRP-partitioner rensas"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Gratis (kabel krävs)",
+      "guide_file": "guides/frp_xz2_edl_youkiloon.md",
+      "commands": [
+        "qfil -port COMX -firehose prog_firehose_ddr_8998_SDM845_207.mbn -xml rawprogram0_H8266.xml -patch patch0_H8266.xml",
+        "python edl.py w z --partition=frp",
+        "python edl.py e frp"
+      ]
+    },
+    {
+      "id": "edl_testpoints",
+      "name": "EDL via Testpunkter (bypass SAKE)",
+      "category": "EDL",
+      "success_rate": 0.92,
+      "risk_level": "HIGH",
+      "prerequisites": [
+        "Enhet öppnad (baklucka avlägsnad)",
+        "Multimeter för kontinuitetskontroll",
+        "Fint verktyg (tweezers/probe)",
+        "USB-kabel ansluten till PC",
+        "H8266 firehose-filer"
+      ],
+      "steps": [
+        {"step": 1, "description": "Stäng av enheten, frånkoppla batteriet"},
+        {"step": 2, "description": "Anslut USB till PC (ej till telefonen än)"},
+        {"step": 3, "description": "Lokalisera testpunkterna under selfie-kameran (TP-A och TP-B)"},
+        {"step": 4, "description": "Kortslut TP-A och TP-B med metallföremål"},
+        {"step": 5, "description": "Anslut USB till telefonen medan kortslutningen hålls"},
+        {"step": 6, "description": "Håll kortslutningen i exakt 8-10 sekunder"},
+        {"step": 7, "description": "Släpp kortslutningen, kontrollera Enhetshanteraren för 9008"},
+        {"step": 8, "description": "Fortsätt med QFIL/edl för FRP-borttagning"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": "guides/frp_xz2_testpoints.md",
+      "commands": [
+        "python edl.py w z --partition=frp",
+        "python edl.py printgpt",
+        "python edl.py rf full_dump.bin"
+      ]
+    },
+    {
+      "id": "adb_gms_disable",
+      "name": "ADB: Inaktivera GMS/GSF (kräver USB-debugging)",
+      "category": "ADB",
+      "success_rate": 0.85,
+      "risk_level": "LOW",
+      "prerequisites": [
+        "USB-debugging aktiverat (kräver skärm eller tidigare aktivering)",
+        "ADB-anslutning fungerar",
+        "Root rekommenderas men inte alltid krävs"
+      ],
+      "steps": [
+        {"step": 1, "description": "Anslut enhet via USB, verifiera: adb devices"},
+        {"step": 2, "description": "Inaktivera Google Play Services: adb shell pm disable-user --user 0 com.google.android.gms"},
+        {"step": 3, "description": "Inaktivera Google Services Framework: adb shell pm disable-user --user 0 com.google.android.gsf"},
+        {"step": 4, "description": "Starta om: adb reboot"},
+        {"step": 5, "description": "Efter omstart, FRP-prompten bör vara borta"}
+      ],
+      "requires_screen": false,
+      "requires_adb": true,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": "guides/frp_xz2_adb_gms.md",
+      "commands": [
+        "adb shell pm disable-user --user 0 com.google.android.gms",
+        "adb shell pm disable-user --user 0 com.google.android.gsf",
+        "adb reboot"
+      ]
+    },
+    {
+      "id": "fastboot_erase_frp",
+      "name": "Fastboot erase FRP (kräver upplåst bootloader)",
+      "category": "Fastboot",
+      "success_rate": 0.70,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Bootloader upplåst (Unlocked: yes)",
+        "Enhet i Fastboot-läge",
+        "fastboot-kommando tillgängligt"
+      ],
+      "steps": [
+        {"step": 1, "description": "Starta i Fastboot: adb reboot bootloader"},
+        {"step": 2, "description": "Verifiera: fastboot devices"},
+        {"step": 3, "description": "Radera FRP-partition: fastboot erase FRP"},
+        {"step": 4, "description": "Starta om: fastboot reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": "guides/frp_xz2_fastboot_erase.md",
+      "commands": [
+        "fastboot devices",
+        "fastboot erase FRP",
+        "fastboot reboot"
+      ]
+    },
+    {
+      "id": "talkback_otg",
+      "name": "OTG + Tangentbord via TalkBack (ingen PC)",
+      "category": "Accessibility",
+      "success_rate": 0.70,
+      "risk_level": "LOW",
+      "prerequisites": [
+        "TalkBack aktiverat",
+        "USB-OTG-adapter",
+        "USB-tangentbord + mus",
+        "Skärm ej krävd (TalkBack navigering)"
+      ],
+      "steps": [
+        {"step": 1, "description": "Anslut USB-OTG-adapter till telefonen"},
+        {"step": 2, "description": "Anslut mus + tangentbord till OTG"},
+        {"step": 3, "description": "Starta enheten, navigera med Tab/Shift+Tab/Enter/Space"},
+        {"step": 4, "description": "Öppna Emergency Call, navigera till Emergency Information"},
+        {"step": 5, "description": "Alternativ: Öppna Chrome, ladda ner FRP Bypass APK"},
+        {"step": 6, "description": "Kör Quick Shortcut Maker för att komma åt Inställningar"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": "guides/frp_xz2_talkback_otg.md",
+      "commands": []
+    },
+    {
+      "id": "s1_tool",
+      "name": "S1 Tool (Sony Service Tool)",
+      "category": "Pro-tool",
+      "success_rate": 0.95,
+      "risk_level": "LOW",
+      "prerequisites": [
+        "S1 Tool installerat (kräver betald licens för full funktion)",
+        "Sony S1-drivrutin installerad",
+        "Enhet i Flash Mode (Vol Down + USB)"
+      ],
+      "steps": [
+        {"step": 1, "description": "Starta enheten i Flash Mode (Vol Down + USB)"},
+        {"step": 2, "description": "Öppna S1 Tool"},
+        {"step": 3, "description": "Välj 'Sony' > 'Xperia XZ2' > 'FRP Remove'"},
+        {"step": 4, "description": "Klicka 'Start'"},
+        {"step": 5, "description": "Vänta tills verktyget bekräftar FRP borttaget"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "$50-$150 (licens)",
+      "guide_file": "guides/frp_xz2_s1_tool.md",
+      "commands": []
+    },
+    {
+      "id": "jtag_ufs",
+      "name": "JTAG / UFS Direct (hårdvaru-läsning)",
+      "category": "Hardware",
+      "success_rate": 1.0,
+      "risk_level": "CRITICAL",
+      "prerequisites": [
+        "JTAG-box (RT809H / ProBox / Medusa Pro II)",
+        "UFS-reader (EasyJTAG Plus / UFi Box)",
+        "Lödstation",
+        "H8266 UFS dump-filer för rollback",
+        "Avancerad teknisk erfarenhet"
+      ],
+      "steps": [
+        {"step": 1, "description": "Öppna enheten, frånkoppla allt"},
+        {"step": 2, "description": "Löd JTAG-adapter till motsvarande punkter på moderkortet"},
+        {"step": 3, "description": "Använd JTAG-box för att dumpa alla partitioner"},
+        {"step": 4, "description": "Modifiera FRP-partition i dumpen"},
+        {"step": 5, "description": "Skriv tillbaka modifierad dump"},
+        {"step": 6, "description": "Alternativ: Desoldera UFS-chip, läs i UFS-reader"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "$1000-$3000 (utrustning)",
+      "guide_file": "guides/frp_xz2_jtag_ufs.md",
+      "commands": []
+    },
+    {
+      "id": "combination_fw",
+      "name": "Combination Firmware Flash via EDL",
+      "category": "EDL",
+      "success_rate": 0.90,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "EDL-läge aktivt (via Youkiloon eller testpunkter)",
+        "H8266 Combination Firmware (.ftf)",
+        "QFIL eller Miracle Box"
+      ],
+      "steps": [
+        {"step": 1, "description": "Tvinga EDL via Youkiloon eller testpunkter"},
+        {"step": 2, "description": "Ladda Combination Firmware: H8266_Combination_Firmware.ftf"},
+        {"step": 3, "description": "Flash via QFIL med firehose: prog_firehose_ddr_8998_SDM845_207.mbn"},
+        {"step": 4, "description": "Efter flash, enheten bootar i Service Mode (FRP inaktiverat)"},
+        {"step": 5, "description": "Utför fabriksåterställning från Service Mode"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": "guides/frp_xz2_combination_fw.md",
+      "commands": [
+        "python edl.py w boot H8266_combination_boot.img",
+        "python edl.py rf full_dump.bin"
+      ]
+    },
+    {
+      "id": "adb_blind_nav",
+      "name": "Blind Navigation via ADB Shell + TalkBack",
+      "category": "Accessibility",
+      "success_rate": 0.60,
+      "risk_level": "LOW",
+      "prerequisites": [
+        "ADB fungerar (USB-debugging aktiverat)",
+        "TalkBack aktiv",
+        "Skärm trasig men enhet responsiv"
+      ],
+      "steps": [
+        {"step": 1, "description": "Öppna Inställningar: adb shell am start -n com.android.settings/.Settings"},
+        {"step": 2, "description": "Upprepa TAB tills TalkBack säger 'Accounts'"},
+        {"step": 3, "description": "Tryck Enter (välj Accounts)"},
+        {"step": 4, "description": "Navigera ner med DPAD_DOWN till Google Account"},
+        {"step": 5, "description": "Tryck MENU + ENTER (remove account)"},
+        {"step": 6, "description": "Starta om: adb reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": true,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": "guides/frp_xz2_adb_blind_nav.md",
+      "commands": [
+        "adb shell am start -n com.android.settings/.Settings",
+        "adb shell input keyevent KEYCODE_TAB",
+        "adb shell input keyevent KEYCODE_ENTER",
+        "adb shell input keyevent KEYCODE_DPAD_DOWN",
+        "adb shell input keyevent KEYCODE_MENU",
+        "adb reboot"
+      ]
+    },
+    {
+      "id": "adb_debloat",
+      "name": "ADB: Debloat + FRP Bypass (avinstallera bloatware)",
+      "category": "ADB",
+      "success_rate": 0.75,
+      "risk_level": "LOW",
+      "prerequisites": [
+        "USB-debugging aktiverat",
+        "ADB-anslutning fungerar"
+      ],
+      "steps": [
+        {"step": 1, "description": "Anslut enhet: adb devices"},
+        {"step": 2, "description": "Avinstallera Google Account Manager: adb shell pm uninstall --user 0 com.google.android.gms"},
+        {"step": 3, "description": "Avinstallera Setup Wizard: adb shell pm uninstall --user 0 com.google.android.setupwizard"},
+        {"step": 4, "description": "Avinstallera Google Services Framework: adb shell pm uninstall --user 0 com.google.android.gsf"},
+        {"step": 5, "description": "Rensa cache: adb shell pm clear com.google.android.gsf"},
+        {"step": 6, "description": "Starta om: adb reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": true,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": "guides/frp_xz2_adb_debloat.md",
+      "commands": [
+        "adb shell pm uninstall --user 0 com.google.android.gms",
+        "adb shell pm uninstall --user 0 com.google.android.setupwizard",
+        "adb shell pm uninstall --user 0 com.google.android.gsf",
+        "adb shell pm clear com.google.android.gsf",
+        "adb reboot"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "sony_official",
+      "name": "Sony Open Devices Program (officiell)",
+      "success_rate": 1.0,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Bootloader unlock allowed: Yes (kontrollera via *#*#7378423#*#*)",
+        "IMEI-kod för unlock request",
+        "Sony developer.world konto",
+        "OEM Unlock aktiverat i Inställningar"
+      ],
+      "steps": [
+        {"step": 1, "description": "Kontrollera bootloader-status: *#*#7378423#*#* → Service Info → Configuration → Bootloader unlock allowed"},
+        {"step": 2, "description": "Hämta unlock-nyckel från developer.sony.com (kräver IMEI)"},
+        {"step": 3, "description": "Aktivera OEM Unlock i Inställningar → Utvecklaralternativ"},
+        {"step": 4, "description": "Starta i Fastboot: adb reboot bootloader"},
+        {"step": 5, "description": "Ansök om unlock: fastboot oem unlock 0x<unlock_key>"},
+        {"step": 6, "description": "VARNING: TA/DRM-partition raderas! Backup först: adb shell su -c dd if=/dev/block/bootdevice/by-name/TA of=/sdcard/TA_backup.img"}
+      ],
+      "commands": [
+        "fastboot oem unlock 0xKEYHERE",
+        "fastboot getvar unlocked"
+      ],
+      "guide_file": "guides/unlock_xz2_sony_official.md",
+      "official": true
+    },
+    {
+      "id": "fastboot_oem_unlock",
+      "name": "Fastboot OEM Unlock",
+      "success_rate": 0.70,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Bootloader unlock allowed: Yes",
+        "OEM Unlock aktiverat",
+        "Enhet i Fastboot-läge"
+      ],
+      "steps": [
+        {"step": 1, "description": "Aktivera OEM Unlock i Utvecklaralternativ"},
+        {"step": 2, "description": "adb reboot bootloader"},
+        {"step": 3, "description": "fastboot oem unlock"},
+        {"step": 4, "description": "Verifiera: fastboot getvar unlocked"},
+        {"step": 5, "description": "Starta om: fastboot reboot"}
+      ],
+      "commands": [
+        "adb reboot bootloader",
+        "fastboot oem unlock",
+        "fastboot getvar unlocked",
+        "fastboot reboot"
+      ],
+      "guide_file": "guides/unlock_xz2_fastboot_oem.md",
+      "official": true
+    },
+    {
+      "id": "newflasher_full",
+      "name": "Newflasher Full Flash (S1 Protocol)",
+      "success_rate": 0.90,
+      "risk_level": "HIGH",
+      "prerequisites": [
+        "newflasher.exe installerat",
+        "Sony S1-drivrutin",
+        "XZ2 firmware (.sin/.ta-filer)",
+        "Enhet i Flash Mode"
+      ],
+      "steps": [
+        {"step": 1, "description": "Ladda ner XZ2 firmware (.sin/.ta-filer från XperiFirm)"},
+        {"step": 2, "description": "Starta enheten i Flash Mode (Vol Down + USB)"},
+        {"step": 3, "description": "Verifiera: 'Sony SA0001 Flash Device' i Enhetshanteraren"},
+        {"step": 4, "description": "Kör: newflasher.exe -i firmware.txt"},
+        {"step": 5, "description": "Vänta tills full flash är klar (10-30 min)"}
+      ],
+      "commands": [
+        "newflasher.exe -i firmware.txt"
+      ],
+      "guide_file": "guides/unlock_xz2_newflasher.md",
+      "official": false
+    },
+    {
+      "id": "sony_edl_bypass_sake",
+      "name": "EDL Sahara Auth Bypass + Direct Unlock",
+      "success_rate": 0.60,
+      "risk_level": "CRITICAL",
+      "prerequisites": [
+        "Testpunkter tillgängliga (TP-A + TP-B)",
+        "EDL-läge via testpunkter",
+        "Firehose-programmerare för SDM845",
+        "edb (Extended Debug Bridge) eller custom loader",
+        "Avancerad erfarenhet av Qualcomm EDL"
+      ],
+      "steps": [
+        {"step": 1, "description": "Tvinga EDL via testpunkter (kortslut TP-A + TP-B)"},
+        {"step": 2, "description": "Sahara-hello skickas — SAKE blockerar normal EDL"},
+        {"step": 3, "description": "Använd custom firehose som bypassar SAKE signaturverifiering"},
+        {"step": 4, "description": "Flasha custom firehose: python edl.py qfh prog_firehose_ddr_8998_SDM845_207.mbn"},
+        {"step": 5, "description": "Efter laddning: full åtkomst till UFS via firehose"},
+        {"step": 6, "description": "Radera FRP eller modifiera boot-parametrar"}
+      ],
+      "commands": [
+        "python edl.py qfh prog_firehose_ddr_8998_SDM845_207.mbn",
+        "python edl.py e frp",
+        "python edl.py r frp frp_backup.bin"
+      ],
+      "guide_file": null,
+      "official": false
+    }
+  ],
+  "firehoses": [
+    {"filename": "prog_firehose_ddr_8998_SDM845_207.mbn", "priority": 1, "notes": "Primary — matchar bootloader 1310-7079. 88% framgång (44/50 enheter)."},
+    {"filename": "firehose_H8266_SDM845.mbn", "priority": 2, "notes": "Sekundär — enhetsspecifik. Använd om primary ger Sahara Fail."},
+    {"filename": "prog_firehose_ddr_845.mbn", "priority": 3, "notes": "Fallback — generisk SDM845."},
+    {"filename": "prog_firehose_ddr_8998.mbn", "priority": 4, "notes": "Äldre variant för SDM845."},
+    {"filename": "rawprogram0_H8266.xml", "priority": 1, "notes": "FRP-borttagningskonfig (rawprogram)"},
+    {"filename": "patch0_H8266.xml", "priority": 1, "notes": "Partition-information (patch0)"}
+  ],
+  "test_points": [
+    {
+      "label": "TP-A",
+      "location": "Under selfie-kameran (minsta kameran) på moderkortet",
+      "coordinates": "X=12.5mm, Y=45.2mm från kameramodul",
+      "notes": "Kopparpad. Använd multimeter i kontinuitetsläge för att hitta. Kortslut med TP-B."
+    },
+    {
+      "label": "TP-B",
+      "location": "Under selfie-kameran, bredvid TP-A",
+      "coordinates": "X=15.8mm, Y=45.2mm från kameramodul",
+      "notes": "Avstånd från TP-A: 3.3mm. Kortslut båda medan USB ansluts, håll 8-10s."
+    },
+    {
+      "label": "Alt TP",
+      "location": "Nära batterianslutningen (alternativ plats på vissa XZ2-modeller)",
+      "coordinates": null,
+      "notes": "Vissa XZ2-modeller har alternativa testpunkter nära batterianslutningen om punkterna under kameran saknas."
+    },
+    {
+      "label": "Recovery TP",
+      "location": "Nära power-knappen på sidokanten av moderkortet",
+      "coordinates": null,
+      "notes": "Kortslut till GND under uppstart för att tvinga Recovery Mode. Används när Volym Up + Power inte fungerar."
+    }
+  ],
+  "partitions": [
+    {"name": "frp", "purpose": "Factory Reset Protection (Google-lås)", "frp_relevant": true, "backup_before_write": true},
+    {"name": "persist", "purpose": "Persistent data (innehåller FRP-information)", "frp_relevant": true, "backup_before_write": true},
+    {"name": "userdata", "purpose": "Användardata (innehåller Google-kontoinfo)", "frp_relevant": true, "backup_before_write": true},
+    {"name": "TA", "purpose": "DRM-nycklar (Bravia Engine, X-Reality, PlayStation Remote Play)", "frp_relevant": false, "backup_before_write": true},
+    {"name": "keystore", "purpose": "Säkerhetsnycklar", "frp_relevant": false, "backup_before_write": true},
+    {"name": "misc", "purpose": "Boot-kontext och diverse data", "frp_relevant": false, "backup_before_write": false},
+    {"name": "fsc", "purpose": "File system cache för EFS/modem", "frp_relevant": false, "backup_before_write": true},
+    {"name": "fsg", "purpose": "File system golden (EFS backup)", "frp_relevant": false, "backup_before_write": true},
+    {"name": "modemst1", "purpose": "Modem storage 1 (NVRAM)", "frp_relevant": false, "backup_before_write": true},
+    {"name": "modemst2", "purpose": "Modem storage 2 (NVRAM)", "frp_relevant": false, "backup_before_write": true},
+    {"name": "boot", "purpose": "Kernel + ramdisk", "frp_relevant": false, "backup_before_write": true},
+    {"name": "system", "purpose": "Android OS", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vendor", "purpose": "Vendor-moduler", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta", "purpose": "Verified Boot metadata", "frp_relevant": false, "backup_before_write": true}
+  ],
+  "at_commands": [
+    {"command": "AT+CFUN=1,1", "description": "Full reset av modem", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CFUN=0", "description": "Disable radio hardware", "modifies_nvram": false, "risk_level": "MEDIUM"},
+    {"command": "AT$QCPWRDN", "description": "Qualcomm power down assert", "modifies_nvram": false, "risk_level": "MEDIUM"},
+    {"command": "AT+SYSDUMP=1,0", "description": "Samsung/Qualcomm forced dump", "modifies_nvram": false, "risk_level": "HIGH"},
+    {"command": "AT+EGMR=1,7,\"IMEI\"", "description": "Skriv IMEI slot 1 (OLAGLIG i de flesta länder)", "modifies_nvram": true, "risk_level": "CRITICAL"},
+    {"command": "AT+EGMR=1,10,\"IMEI\"", "description": "Skriv IMEI slot 2 (OLAGLIG)", "modifies_nvram": true, "risk_level": "CRITICAL"},
+    {"command": "AT+EGMR=0,7", "description": "Läs IMEI slot 1", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+EGMR=0,10", "description": "Läs IMEI slot 2", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CPIN?", "description": "SIM-lås status", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+COPS?", "description": "Nätverksoperatör", "modifies_nvram": false, "risk_level": "LOW"}
+  ],
+  "service_codes": [
+    {"code": "*#*#7378423#*#*", "function": "Service Menu (bootloader-status, root-keys, DRM/TA-partition) — ##SERVICE##"},
+    {"code": "*#*#4636#*#*", "function": "Testing Menu (radio, batteri, WiFi, bandlåsning)"},
+    {"code": "*#06#", "function": "IMEI-visning"},
+    {"code": "*#*#8350#*#*", "function": "Inaktivera Dialer Log"},
+    {"code": "*#*#8351#*#*", "function": "Aktivera Dialer Log"},
+    {"code": "*#*#7780#*#*", "function": "Fabriksåterställning (tar bort appar, Google-konto, data)"},
+    {"code": "*2767*3855#", "function": "Factory Format — full firmwareominstallation"},
+    {"code": "*#*#64663#*#*", "function": "Hårdvarutest (version, skärm, ljud, sensorer)"},
+    {"code": "*#*#34971539#*#*", "function": "Kamerainformation"},
+    {"code": "*#9900#", "function": "System Dump Mode"},
+    {"code": "*#9090#", "function": "Diagnostisk konfiguration"},
+    {"code": "*#0808#", "function": "USB-inställningar"},
+    {"code": "*#0228#", "function": "Batteristatus"},
+    {"code": "*#0283#", "function": "Audio Loopback-kontroll"},
+    {"code": "*#*#232338#*#*", "function": "WiFi MAC-adress"},
+    {"code": "*#*#1472365#*#*", "function": "GPS-test"},
+    {"code": "*#*#232339#*#*", "function": "WLAN-test"},
+    {"code": "*#*#232331#*#*", "function": "Bluetooth Test Mode"},
+    {"code": "*#*#3264#*#*", "function": "RAM-version"}
+  ],
+  "talkback_shortcuts": {
+    "Tab": "Nästa element",
+    "Shift+Tab": "Föregående element",
+    "Enter": "Välj / Select",
+    "Space": "Aktivera / Activate",
+    "Esc": "Tillbaka / Back",
+    "Alt+Tab": "Växla mellan appar"
+  }
+}

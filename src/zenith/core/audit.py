@@ -128,8 +128,8 @@ class AuditLog:
             last_line: str | None = None
             try:
                 with self.path.open("r", encoding="utf-8") as f:
-                    for _line in f:
-                        pass
+                    for line in f:
+                        last_line = line
             except (OSError, UnicodeDecodeError):
                 pass
             if last_line:

@@ -1,0 +1,413 @@
+{
+  "id": "nokia_c32_ta1534",
+  "manufacturer": "Nokia",
+  "model": "C32 TA-1534",
+  "codename": "PHARAOH",
+  "soc_vendor": "Unisoc",
+  "soc_name": "SC9863A1 (SHARKL3)",
+  "android_version": "Android 13",
+  "storage_type": "eMMC",
+  "bootloader_locked": true,
+  "metadata": {
+    "cpu": "Octa-core (2x1.6 GHz Cortex-A55 + 6x1.2 GHz Cortex-A55)",
+    "gpu": "Imagination PowerVR GE8322",
+    "boot_chain": "BootROM (SPRD) → FDL1 → FDL2 → Linux Kernel → Android 13",
+    "secure_boot": "Weak on budget Unisoc models —saknar ofta stark Secure Boot",
+    "anti_rollback": "Finns på nyare Unisoc-chip men ej bekräftad blockerande på C32",
+    "usb_vid": "0x1782",
+    "usb_pid_bootrom": "0x4D00",
+    "windows_diag_port_name": "SPRD U2S Diag Port",
+    "windows_usb_name": "SPRD SCI-USB",
+    "uart_baud": 115200,
+    "uart_voltage": "3.3V",
+    "uart_location": "TX/RX pads near SoC or PMIC",
+    "cve_2022_38694_supported": true,
+    "variant_note": "TA-1532 och TA-1534 bågje refererade i dokumentation"
+  },
+  "sprd_chip_family": "SHARKL3",
+  "fdl1_base": 20480,
+  "fdl2_base": 2667576832,
+  "cve_exec_addr": 20200,
+  "modes": [
+    {
+      "name": "sprd_bootrom",
+      "display_name": "SPRD BootROM / Upgrade Mode",
+      "usb_ids": [
+        {"vid": 6018, "pid": 19712}
+      ],
+      "port_description_patterns": ["SPRD", "1782", "4D00", "SPD USB Port", "ResearchDownload Port", "Unisoc"],
+      "entry_methods": [
+        "Håll volym-knapparna medan USB ansluts",
+        "Test point — kortslut SPD Test-Point till GND vid USB-anslutning (längs kretskortets kant, nära USB)",
+        "Håll Volym Upp + Power (varierar per modell)"
+      ],
+      "exit_methods": [
+        "sfd_tool reset",
+        "spd_dump reset",
+        "Batteri frånkoppla + återanslut",
+        "AT+CFUN=1,1 i Diag Mode"
+      ],
+      "tools": ["sfd_tool", "spd_dump", "ResearchDownload", "SPD Upgrade Tool", "SPD Flash Tool"],
+      "description": "Unisoc SPRD BootROM motsvarar EDL/BROM. FDL1/FDL2 skickas till RAM över virtuell COM-port. VID 0x1782, PID 0x4D00. Saknar ofta stark Secure Boot på budgetmodeller."
+    },
+    {
+      "name": "sprd_diag",
+      "display_name": "SPRD Diag Mode",
+      "usb_ids": [],
+      "port_description_patterns": ["SPRD U2S Diag", "SPRD SCI-USB", "SPRD Diag"],
+      "entry_methods": [
+        "setprop persist.usb.eng 1 (kräver root)",
+        "USB-inställningar (om tillgängligt i Engineering Mode)",
+        "*#*#864#*#* Diagnostic Menu"
+      ],
+      "exit_methods": [
+        "setprop persist.usb.eng 0",
+        "Reboot"
+      ],
+      "tools": ["SPD Diag Mode", "AT command terminal", "WriteIMEI"],
+      "description": "SPRD Diag Mode använder AT-kommandon över COM-port. Används för IMEI-reparation, nätverkslås, baseband-fix ('Fix unknown baseband'). Windows visar 'SPRD U2S Diag Port' eller 'SPRD SCI-USB'."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot / Bootloader",
+      "usb_ids": [],
+      "port_description_patterns": ["fastboot"],
+      "entry_methods": [
+        "adb reboot bootloader",
+        "Volym Ner + Power vid uppstart"
+      ],
+      "exit_methods": [
+        "fastboot reboot",
+        "Power button hold 10s"
+      ],
+      "tools": ["fastboot"],
+      "description": "Standard Android fastboot-läge. Bootloader låst — ingen officiell HMD unlock-tjänst dokumenterad. Använd CVE-2022-38694 för BROM-baserad unlock."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB (USB Debugging)",
+      "usb_ids": [],
+      "port_description_patterns": ["ADB", "Android"],
+      "entry_methods": [
+        "Aktivera USB-debugging i Utvecklaralternativ",
+        "Anslut USB → acceptera RSA-prompt"
+      ],
+      "exit_methods": ["adb disconnect"],
+      "tools": ["adb"],
+      "description": "Normalt systemläge med USB-debugging aktiverat."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery Mode",
+      "usb_ids": [],
+      "port_description_patterns": ["recovery"],
+      "entry_methods": [
+        "adb reboot recovery",
+        "Volym Upp + Power vid uppstart"
+      ],
+      "exit_methods": ["Reboot system now"],
+      "tools": ["adb"],
+      "description": "Android Recovery för fabriksåterställning."
+    },
+    {
+      "name": "uart",
+      "display_name": "UART Debug (Hardware)",
+      "usb_ids": [],
+      "port_description_patterns": ["UART", "COM"],
+      "entry_methods": [
+        "Löd TX/RX kablar till pads nära SoC/PMIC",
+        "Anslut USB-TTL adapter (3.3V)",
+        "Öppna Putty/minicom @ 115200 baud"
+      ],
+      "exit_methods": ["Desolder kablar"],
+      "tools": ["USB-TTL adapter", "Putty", "minicom"],
+      "description": "UART-soldering för raw boot-loggar. Används när USB-lägen misslyckats. TX/RX pads vanliga på Nokia moderkort nära SoC eller PMIC. 3.3V USB-TTL adapter, 115200 baud."
+    },
+    {
+      "name": "mtp",
+      "display_name": "MTP / PTP File Transfer",
+      "usb_ids": [],
+      "port_description_patterns": ["MTP", "PTP", "Media Transfer", "Nokia"],
+      "entry_methods": [
+        "Anslut USB → välj MTP/PTP i notifiering",
+        "USB-inställningar → överföringsläge"
+      ],
+      "exit_methods": [
+        "Koppla bort USB",
+        "Ändra överföringsläge"
+      ],
+      "tools": ["adb", "Windows Explorer", "mtp-tools"],
+      "description": "Media Transfer Protocol för filöverföring. Standardläge vid USB-anslutning. Används för att överföra firmware-filer, backup och loggar."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "sprd_fdl2_userdata_erase",
+      "name": "SPRD BootROM + FDL2 userdata erase (sfd_tool)",
+      "category": "EDL",
+      "success_rate": 0.95,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "sfd_tool.exe i tools/-katalogen",
+        "SPRD VCOM-drivrutin installerad",
+        "Nokia C32 .pac firmware (innehåller FDL1/FDL2)",
+        "Enhet i SPRD BootROM (test point eller volym-knappar)"
+      ],
+      "steps": [
+        {"step": 1, "description": "Tvinga SPRD BootROM: test point (kortslut till GND vid USB) eller håll volym-knappar"},
+        {"step": 2, "description": "Verifiera: Enhetshanteraren visar VID 0x1782, PID 0x4D00 ('SPRD SCI-USB' eller 'SPRD U2S Diag Port')"},
+        {"step": 3, "description": "Installera SPRD VCOM-drivrutin om ej redan installerad"},
+        {"step": 4, "description": "Extrahera FDL1 + FDL2 från .pac firmware (sfd_tool kan inspektera PAC)"},
+        {"step": 5, "description": "Kör: sfd_tool --no-gui fdl FDL1.bin 0x5000 fdl FDL2.bin 0x9efffe00 exec erase_part userdata reset"},
+        {"step": 6, "description": "Starta om enheten — FRP borttaget"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": "guides/frp_nokia_sprd_fdl2.md",
+      "commands": [
+        "sfd_tool --no-gui fdl FDL1.bin 0x5000 fdl FDL2.bin 0x9efffe00 exec erase_part userdata reset",
+        "sfd_tool --no-gui fdl FDL1.bin 0x5000 fdl FDL2.bin 0x9efffe00 exec r all"
+      ]
+    },
+    {
+      "id": "researchdownload_frp",
+      "name": "ResearchDownload GUI + .pac firmware",
+      "category": "Pro-tool",
+      "success_rate": 0.90,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "ResearchDownload installerat (Windows)",
+        "Nokia C32 TA-1534 .pac firmware",
+        "SPRD VCOM-drivrutin",
+        "Enhet i SPRD BootROM"
+      ],
+      "steps": [
+        {"step": 1, "description": "Tvinga SPRD BootROM via test point eller knappkombination"},
+        {"step": 2, "description": "Öppna ResearchDownload"},
+        {"step": 3, "description": "Ladda .pac-firmware: klicka på paket-ikonen, välj .pac-fil"},
+        {"step": 4, "description": "Avmarkera alla partitioner UTAN userdata (eller markera bara userdata för erase)"},
+        {"step": 5, "description": "Klicka Start (grön pil)"},
+        {"step": 6, "description": "Vänta tills ResearchDownload visar 'PASSED'"},
+        {"step": 7, "description": "Koppla bort USB, starta om enheten — FRP borttaget"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Gratis (ResearchDownload)",
+      "guide_file": "guides/frp_nokia_researchdownload.md",
+      "commands": []
+    },
+    {
+      "id": "cve2022_38694_frp",
+      "name": "CVE-2022-38694 BROM Exploit + FRP Wipe",
+      "category": "EDL",
+      "success_rate": 0.88,
+      "risk_level": "HIGH",
+      "prerequisites": [
+        "CVE-2022-38694 unlock-paket för sc9863a (i tools/cve2022_38694_sc9863a/)",
+        "spd_dump.exe (ingår i CVE-paketet)",
+        "Test point tillgänglig (måste kortslutas för BootROM-tvang)",
+        "SPRD VCOM-drivrutin"
+      ],
+      "steps": [
+        {"step": 1, "description": "Kortslut test point till GND, anslut USB (tvingar BootROM)"},
+        {"step": 2, "description": "Kör CVE-exploit för att bypassa signaturverifiering:"},
+        {"step": 3, "description": "spd_dump --wait 300 exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec erase_part userdata reset"},
+        {"step": 4, "description": "Alternativ: använd misc-wipe.bin för FRP: spd_dump exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec w misc misc-wipe.bin reset"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": "guides/frp_nokia_cve2022_38694.md",
+      "commands": [
+        "spd_dump --wait 300 exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec erase_part userdata reset",
+        "spd_dump exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec w misc misc-wipe.bin reset"
+      ]
+    },
+    {
+      "id": "adb_gms_disable",
+      "name": "ADB: Inaktivera GMS/GSF",
+      "category": "ADB",
+      "success_rate": 0.80,
+      "risk_level": "LOW",
+      "prerequisites": [
+        "USB-debugging aktiverat",
+        "ADB-anslutning fungerar"
+      ],
+      "steps": [
+        {"step": 1, "description": "adb shell pm disable-user --user 0 com.google.android.gms"},
+        {"step": 2, "description": "adb shell pm disable-user --user 0 com.google.android.gsf"},
+        {"step": 3, "description": "adb reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": true,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": "guides/frp_nokia_adb_gms.md",
+      "commands": [
+        "adb shell pm disable-user --user 0 com.google.android.gms",
+        "adb shell pm disable-user --user 0 com.google.android.gsf",
+        "adb reboot"
+      ]
+    },
+    {
+      "id": "adb_debloat",
+      "name": "ADB: Debloat + FRP Bypass (avinstallera bloatware)",
+      "category": "ADB",
+      "success_rate": 0.75,
+      "risk_level": "LOW",
+      "prerequisites": [
+        "USB-debugging aktiverat",
+        "ADB-anslutning fungerar"
+      ],
+      "steps": [
+        {"step": 1, "description": "Anslut enhet: adb devices"},
+        {"step": 2, "description": "Avinstallera Google Account Manager: adb shell pm uninstall --user 0 com.google.android.gms"},
+        {"step": 3, "description": "Avinstallera Setup Wizard: adb shell pm uninstall --user 0 com.google.android.setupwizard"},
+        {"step": 4, "description": "Avinstallera Google Services Framework: adb shell pm uninstall --user 0 com.google.android.gsf"},
+        {"step": 5, "description": "Rensa cache: adb shell pm clear com.google.android.gsf"},
+        {"step": 6, "description": "Starta om: adb reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": true,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": "guides/frp_nokia_adb_debloat.md",
+      "commands": [
+        "adb shell pm uninstall --user 0 com.google.android.gms",
+        "adb shell pm uninstall --user 0 com.google.android.setupwizard",
+        "adb shell pm uninstall --user 0 com.google.android.gsf",
+        "adb shell pm clear com.google.android.gsf",
+        "adb reboot"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "cve2022_38694_unlock",
+      "name": "CVE-2022-38694 Bootloader Unlock (BROM Exploit)",
+      "success_rate": 0.85,
+      "risk_level": "HIGH",
+      "prerequisites": [
+        "CVE-2022-38694 unlock-paket för sc9863a (i tools/cve2022_38694_sc9863a/)",
+        "spd_dump.exe (ingår i paketet)",
+        "Test point tillgänglig (måste kortslutas för BootROM-tvang)",
+        "SPRD VCOM-drivrutin installerad",
+        "Alla FDL-filer från paketet (fdl1-dl.bin, fdl2-dl.bin, spl-unlock.bin, misc-wipe.bin)"
+      ],
+      "steps": [
+        {"step": 1, "description": "Kortslut test point till GND, anslut USB (tvingar BootROM)"},
+        {"step": 2, "description": "Steg 1 — Spara original SPL+U-Boot, radera SPL:"},
+        {"step": 3, "description": "spd_dump --wait 300 exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec r splloader r uboot e splloader e splloader_bak reset"},
+        {"step": 4, "description": "Steg 2 — Repartition + flash patched U-Boot:"},
+        {"step": 5, "description": "spd_dump exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec repartition partition_gmrww.xml reset"},
+        {"step": 6, "description": "Vänta 10s, sedan: spd_dump exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec w uboot fdl2-cboot.bin reset"},
+        {"step": 7, "description": "Steg 3 — Kör unlock (kan behöva två gånger):"},
+        {"step": 8, "description": "spd_dump exec_addr 0x4ee8 fdl spl-unlock.bin 0x5000"},
+        {"step": 9, "description": "Verifiera unlock: spd_dump exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec verbose 2 read_part miscdata 8192 64 m.bin reset"},
+        {"step": 10, "description": "64 nollor = låst, 32 sträng + 16 hash + 16 hash = upplåst"},
+        {"step": 11, "description": "Steg 4 — Återställ SPL+U-Boot från backup"}
+      ],
+      "commands": [
+        "spd_dump --wait 300 exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec r splloader r uboot e splloader e splloader_bak reset",
+        "spd_dump exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec repartition partition_gmrww.xml reset",
+        "spd_dump exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec w uboot fdl2-cboot.bin reset",
+        "spd_dump exec_addr 0x4ee8 fdl spl-unlock.bin 0x5000",
+        "spd_dump exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec verbose 2 read_part miscdata 8192 64 m.bin reset"
+      ],
+      "guide_file": "guides/unlock_nokia_cve2022_38694.md",
+      "official": false
+    },
+    {
+      "id": "cve2022_38694_dverity",
+      "name": "CVE-2022-38694 + disable dm-verity (post-unlock)",
+      "success_rate": 0.80,
+      "risk_level": "HIGH",
+      "prerequisites": [
+        "Bootloader redan upplåst via CVE-2022-38694",
+        "Samma CVE-paket som för unlock",
+        "Test point tillgänglig"
+      ],
+      "steps": [
+        {"step": 1, "description": "Tvinga BootROM via test point"},
+        {"step": 2, "description": "Ladda FDL1 + FDL2 och disable dm-verity:"},
+        {"step": 3, "description": "sfd_tool --no-gui fdl FDL1.bin 0x5000 fdl FDL2.bin 0x9efffe00 exec verity 0 reset"},
+        {"step": 4, "description": "Alternativ: spd_dump exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec verity 0 reset"},
+        {"step": 5, "description": "Starta om — custom ROM eller root kan nu installeras utan signaturfel"}
+      ],
+      "commands": [
+        "sfd_tool --no-gui fdl FDL1.bin 0x5000 fdl FDL2.bin 0x9efffe00 exec verity 0 reset",
+        "spd_dump exec_addr 0x4ee8 fdl fdl1-dl.bin 0x5000 fdl fdl2-dl.bin 0x9efffe00 exec verity 0 reset"
+      ],
+      "guide_file": null,
+      "official": false
+    }
+  ],
+  "firehoses": [],
+  "test_points": [
+    {
+      "label": "SPRD Test Point",
+      "location": "Längs kretskortets kant, nära USB-kontakten",
+      "coordinates": null,
+      "notes": "Ofta märkta eller tillgängliga utan att ta bort sköldar. Verifiera med multimeter innan kortslutning. För exakta koordinater, se Chimera Tool / Passware / XDA databas för Nokia C32."
+    }
+  ],
+  "partitions": [
+    {"name": "userdata", "purpose": "Användardata — raderas för FRP bypass", "frp_relevant": true, "backup_before_write": true},
+    {"name": "frp", "purpose": "Factory Reset Protection (Google-lås)", "frp_relevant": true, "backup_before_write": true},
+    {"name": "misc", "purpose": "Boot-kontext — misc-wipe.bin rensar FRP", "frp_relevant": true, "backup_before_write": false},
+    {"name": "miscdata", "purpose": "Bootloader unlock status (läses för verifiering)", "frp_relevant": false, "backup_before_write": false},
+    {"name": "splloader", "purpose": "SPL loader (FDL1-laddare från flash) — raderas vid CVE exploit", "frp_relevant": false, "backup_before_write": true},
+    {"name": "uboot", "purpose": "U-Boot bootloader — patchas vid CVE unlock", "frp_relevant": false, "backup_before_write": true},
+    {"name": "boot", "purpose": "Kernel + ramdisk", "frp_relevant": false, "backup_before_write": true},
+    {"name": "system", "purpose": "Android OS", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vendor", "purpose": "Vendor-moduler", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta", "purpose": "Verified Boot metadata", "frp_relevant": false, "backup_before_write": true},
+    {"name": "persist", "purpose": "Beständiga OEM-inställningar", "frp_relevant": false, "backup_before_write": true},
+    {"name": "modem", "purpose": "Baseband/modem firmware", "frp_relevant": false, "backup_before_write": true},
+    {"name": "efs", "purpose": "Encrypted File System (modem-kalibrering)", "frp_relevant": false, "backup_before_write": true},
+    {"name": "pgpt", "purpose": "Primary GPT header", "frp_relevant": false, "backup_before_write": true},
+    {"name": "sgpt", "purpose": "Secondary GPT header", "frp_relevant": false, "backup_before_write": true},
+    {"name": "boot_para", "purpose": "Boot-parametrar", "frp_relevant": false, "backup_before_write": true},
+    {"name": "proinfo", "purpose": "Produktinformation", "frp_relevant": false, "backup_before_write": false}
+  ],
+  "at_commands": [
+    {"command": "AT+EGMR=1,7,\"IMEI\"", "description": "Skriv IMEI slot 1 (OLAGLIG i de flesta länder)", "modifies_nvram": true, "risk_level": "CRITICAL"},
+    {"command": "AT+EGMR=1,10,\"IMEI\"", "description": "Skriv IMEI slot 2 (OLAGLIG)", "modifies_nvram": true, "risk_level": "CRITICAL"},
+    {"command": "AT+SPATCMD=?", "description": "SPRD-specifika kommandon (query)", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CFUN=1,1", "description": "Full reset av modem", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+EGMR=0,7", "description": "Läs IMEI slot 1", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CPIN?", "description": "SIM-lås status", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+COPS?", "description": "Nätverksoperatör", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CSQ", "description": "Signalstyrka", "modifies_nvram": false, "risk_level": "LOW"}
+  ],
+  "service_codes": [
+    {"code": "*#*#864#*#*", "function": "Engineering Mode (SPRDiag)"},
+    {"code": "*#*#362#*#*", "function": "Factory Data Reset (FDR)"},
+    {"code": "*#06#", "function": "IMEI-visning"},
+    {"code": "*#*#3646633#*#*", "function": "Engineering Mode (MTK-alias, fungerar på SPRD)"},
+    {"code": "*#*#4636#*#*", "function": "Phone Information (telefon, batteri, WiFi)"},
+    {"code": "*#0808#", "function": "USB-inställningar"},
+    {"code": "*#9900#", "function": "Dump Mode"},
+    {"code": "*#9090#", "function": "Diagnostisk konfiguration"},
+    {"code": "*#0*#", "function": "General Test Mode"},
+    {"code": "*#12580*369#", "function": "Mjukvara och hårdvara info"},
+    {"code": "*#*#225#*#*", "function": "Händelsekalender"},
+    {"code": "*#*#426#*#*", "function": "Google Play Services"},
+    {"code": "*#*#759#*#*", "function": "Rlz Debug UI"},
+    {"code": "*#*#64663#*#*", "function": "Hårdvarutest"},
+    {"code": "*#*#7780#*#*", "function": "Fabriksåterställning"},
+    {"code": "*2767*3855#", "function": "Firmwareominstallation"},
+    {"code": "*#*#3264#*#*", "function": "RAM-version"},
+    {"code": "*#*#44336#*#*", "function": "Build-info"}
+  ],
+  "talkback_shortcuts": {}
+}

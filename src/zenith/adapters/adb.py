@@ -6,8 +6,10 @@ Supports wireless ADB, device info, shell commands, file operations.
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
+import time
 from typing import Any, ClassVar
 
 from loguru import logger
@@ -16,6 +18,11 @@ from zenith.adapters.protocol import AdapterProtocol, AdapterResult
 from zenith.core.device import DeviceType
 
 ADB_TIMEOUT = 30
+ADB_RETRIES = 2
+ADB_RETRY_DELAY = 1.0
+
+_SERIAL_PATTERN = re.compile(r"^[a-zA-Z0-9._:\-]+$")
+_SHELL_META = re.compile(r"[;&|`$(){}<>]")
 
 
 class ADBAdapter(AdapterProtocol):
@@ -23,21 +30,42 @@ class ADBAdapter(AdapterProtocol):
     binary: ClassVar[str] = "adb"
     supported_types: ClassVar[tuple[DeviceType, ...]] = (DeviceType.ADB, DeviceType.ANDROID)
 
+    _pool_client: ClassVar[Any] = None
+    _pool_lock: ClassVar[Any] = __import__("threading").Lock()
+
+    @classmethod
+    def _get_pooled_client(cls) -> Any:
+        """Share a single adbutils client across all ADBAdapter instances."""
+        if cls._pool_client is None:
+            with cls._pool_lock:
+                if cls._pool_client is None:
+                    try:
+                        from adbutils import AdbClient
+                        cls._pool_client = AdbClient(host="127.0.0.1", port=5037)
+                    except ImportError:
+                        cls._pool_client = False
+        return cls._pool_client if cls._pool_client is not False else None
+
     def __init__(self) -> None:
-        self._client = None
         self._active_serial: str | None = None
         self._use_adbutils = False
         self._init_adbutils()
 
+    @staticmethod
+    def _validate_serial(serial: str) -> None:
+        if not _SERIAL_PATTERN.match(serial):
+            raise ValueError(f"Invalid device serial: {serial!r}")
+
+    @staticmethod
+    def _validate_path(path: str, label: str = "path") -> None:
+        if _SHELL_META.search(path):
+            raise ValueError(f"Invalid {label} (contains shell metacharacters): {path!r}")
+
     def _init_adbutils(self) -> None:
-        try:
-            from adbutils import AdbClient  # type: ignore[attr-defined]
-            self._client = AdbClient(host="127.0.0.1", port=5037)
+        self._client = self._get_pooled_client()
+        if self._client is not None:
             self._use_adbutils = True
-            logger.info("ADBAdapter initialized with adbutils")
-        except ImportError:
-            self._use_adbutils = False
-            logger.warning("adbutils not installed — using subprocess fallback")
+            logger.info("ADBAdapter initialized with pooled adbutils client")
 
     def is_available(self) -> bool:
         if self._use_adbutils:
@@ -86,21 +114,27 @@ class ADBAdapter(AdapterProtocol):
         cmd_parts.extend(args)
 
         cmd_str = " ".join(cmd_parts)
-        try:
-            proc = subprocess.run(cmd_parts, capture_output=True, text=True, timeout=timeout)
-            return AdapterResult(
-                success=proc.returncode == 0,
-                command=cmd_str,
-                stdout=proc.stdout.strip(),
-                stderr=proc.stderr.strip(),
-                returncode=proc.returncode,
-            )
-        except subprocess.TimeoutExpired:
-            return AdapterResult(success=False, command=cmd_str, stderr="Command timed out")
-        except Exception as e:
-            return AdapterResult(success=False, command=cmd_str, stderr=str(e))
+        last_error = ""
+        for attempt in range(1 + ADB_RETRIES):
+            try:
+                proc = subprocess.run(cmd_parts, capture_output=True, text=True, timeout=timeout)
+                return AdapterResult(
+                    success=proc.returncode == 0,
+                    command=cmd_str,
+                    stdout=proc.stdout.strip(),
+                    stderr=proc.stderr.strip(),
+                    returncode=proc.returncode,
+                )
+            except subprocess.TimeoutExpired:
+                last_error = "Command timed out"
+            except Exception as e:
+                last_error = str(e)
+            if attempt < ADB_RETRIES:
+                time.sleep(ADB_RETRY_DELAY)
+        return AdapterResult(success=False, command=cmd_str, stderr=last_error)
 
     def connect(self, device_id: str) -> AdapterResult:
+        self._validate_serial(device_id)
         self._active_serial = device_id
         return self.run("devices")
 
@@ -115,25 +149,44 @@ class ADBAdapter(AdapterProtocol):
 
     def get_info(self, device_id: str = "") -> dict[str, Any]:
         if device_id:
+            self._validate_serial(device_id)
             self._active_serial = device_id
 
-        def _getprop(key: str) -> str:
-            r = self.getprop(key)
-            return r.stdout if r.success else "Unknown"
-
-        return {
-            "serial": self._active_serial or "",
-            "model": _getprop("ro.product.model"),
-            "manufacturer": _getprop("ro.product.manufacturer"),
-            "brand": _getprop("ro.product.brand"),
-            "android_version": _getprop("ro.build.version.release"),
-            "sdk_level": _getprop("ro.build.version.sdk"),
-            "build_number": _getprop("ro.build.display.id"),
-            "cpu_abi": _getprop("ro.product.cpu.abi"),
-            "security_patch": _getprop("ro.build.version.security_patch"),
-            "hardware": _getprop("ro.hardware"),
-            "product_board": _getprop("ro.product.board"),
+        serial = self._active_serial or ""
+        info: dict[str, Any] = {
+            "serial": serial,
+            "model": "Unknown",
+            "manufacturer": "Unknown",
+            "brand": "Unknown",
+            "android_version": "Unknown",
+            "sdk_level": "Unknown",
+            "build_number": "Unknown",
+            "cpu_abi": "Unknown",
+            "security_patch": "Unknown",
+            "hardware": "Unknown",
+            "product_board": "Unknown",
         }
+
+        r = self.run("shell", "getprop")
+        if r.success and r.stdout:
+            props: dict[str, str] = {}
+            for line in r.stdout.splitlines():
+                match = re.match(r"^\[(.+?)\]:\s*\[(.*?)\]", line.strip())
+                if match:
+                    props[match.group(1)] = match.group(2)
+
+            info["model"] = props.get("ro.product.model", "Unknown")
+            info["manufacturer"] = props.get("ro.product.manufacturer", "Unknown")
+            info["brand"] = props.get("ro.product.brand", "Unknown")
+            info["android_version"] = props.get("ro.build.version.release", "Unknown")
+            info["sdk_level"] = props.get("ro.build.version.sdk", "Unknown")
+            info["build_number"] = props.get("ro.build.display.id", "Unknown")
+            info["cpu_abi"] = props.get("ro.product.cpu.abi", "Unknown")
+            info["security_patch"] = props.get("ro.build.version.security_patch", "Unknown")
+            info["hardware"] = props.get("ro.hardware", "Unknown")
+            info["product_board"] = props.get("ro.product.board", "Unknown")
+
+        return info
 
     def reboot(self, mode: str | None = None, timeout: int = 30) -> AdapterResult:
         args = ["reboot"]
@@ -178,5 +231,7 @@ class ADBAdapter(AdapterProtocol):
         return self.run("pair", f"{host}:{port}", code)
 
     def root_restart(self) -> AdapterResult:
-        self.run("root")
+        r = self.run("root")
+        if not r.success:
+            return r
         return self.run("remount")

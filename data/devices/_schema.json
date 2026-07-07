@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lanfear Diagnostics Device Profile",
+  "description": "Plugin schema for device-specific low-level diagnostic + FRP + unlock procedures",
+  "type": "object",
+  "required": ["id", "manufacturer", "model", "codename", "soc_vendor", "soc_name", "modes", "frp_methods", "unlock_methods"],
+  "properties": {
+    "id": { "type": "string", "description": "Unique profile identifier, e.g. sony_xz2_h8266" },
+    "manufacturer": { "type": "string" },
+    "model": { "type": "string" },
+    "codename": { "type": "string" },
+    "soc_vendor": { "type": "string", "enum": ["Qualcomm", "MediaTek", "Unisoc", "Samsung", "Google", "HiSilicon", "Rockchip", "Allwinner", "Apple"] },
+    "soc_name": { "type": "string" },
+    "android_version": { "type": "string" },
+    "storage_type": { "type": "string" },
+    "bootloader_locked": { "type": "boolean" },
+    "metadata": { "type": "object" },
+    "sprd_chip_family": { "type": "string" },
+    "fdl1_base": { "type": "integer" },
+    "fdl2_base": { "type": "integer" },
+    "cve_exec_addr": { "type": "integer" },
+    "talkback_shortcuts": { "type": "object" },
+    "modes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "display_name"],
+        "properties": {
+          "name": { "type": "string" },
+          "display_name": { "type": "string" },
+          "usb_ids": { "type": "array", "items": { "type": "object", "required": ["vid"], "properties": { "vid": { "type": "integer" }, "pid": { "type": "integer" } } } },
+          "port_description_patterns": { "type": "array", "items": { "type": "string" } },
+          "entry_methods": { "type": "array", "items": { "type": "string" } },
+          "exit_methods": { "type": "array", "items": { "type": "string" } },
+          "tools": { "type": "array", "items": { "type": "string" } },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "frp_methods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "success_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "risk_level": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+          "prerequisites": { "type": "array", "items": { "type": "string" } },
+          "steps": { "type": "array", "items": { "type": "object" } },
+          "requires_screen": { "type": "boolean" },
+          "requires_adb": { "type": "boolean" },
+          "requires_edl": { "type": "boolean" },
+          "requires_root": { "type": "boolean" },
+          "cost": { "type": "string" },
+          "guide_file": { "type": ["string", "null"] },
+          "commands": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "unlock_methods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "success_rate": { "type": "number" },
+          "risk_level": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+          "prerequisites": { "type": "array", "items": { "type": "string" } },
+          "steps": { "type": "array", "items": { "type": "object" } },
+          "commands": { "type": "array", "items": { "type": "string" } },
+          "guide_file": { "type": ["string", "null"] },
+          "official": { "type": "boolean" }
+        }
+      }
+    },
+    "firehoses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["filename"],
+        "properties": {
+          "filename": { "type": "string" },
+          "priority": { "type": "integer" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "test_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["label", "location"],
+        "properties": {
+          "label": { "type": "string" },
+          "location": { "type": "string" },
+          "coordinates": { "type": ["string", "null"] },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "partitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "purpose": { "type": "string" },
+          "frp_relevant": { "type": "boolean" },
+          "backup_before_write": { "type": "boolean" }
+        }
+      }
+    },
+    "at_commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["command", "description"],
+        "properties": {
+          "command": { "type": "string" },
+          "description": { "type": "string" },
+          "modifies_nvram": { "type": "boolean" },
+          "risk_level": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] }
+        }
+      }
+    },
+    "service_codes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "function"],
+        "properties": {
+          "code": { "type": "string" },
+          "function": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -3,23 +3,40 @@
 from __future__ import annotations
 
 import json
+import logging
+import sys
 
 import click
 
 from zenith import __version__
 
 
+def _setup_verbose(verbose: bool) -> None:
+    if verbose:
+        from loguru import logger
+        logger.remove()
+        logger.add(sys.stderr, level="DEBUG")
+    else:
+        logging.getLogger("uvicorn").setLevel(logging.WARNING)
+
+
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 @click.version_option(__version__, "-V", "--version", prog_name="zenith")
-def main() -> None:
+@click.option("--verbose", "-v", is_flag=True, help="Enable debug logging.")
+def main(verbose: bool = False) -> None:
     """Zenith Unified — AI-powered Android diagnostics, repair, and recovery toolkit."""
+    _setup_verbose(verbose)
 
 
 @main.command()
 def discover() -> None:
     """Discover connected devices across ADB, Fastboot, USB, and serial."""
-    from zenith.core.discovery import run_discovery
-    click.echo(run_discovery().to_display_text())
+    try:
+        from zenith.core.discovery import run_discovery
+        click.echo(run_discovery().to_display_text())
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
 
 
 @main.group(invoke_without_command=True)
@@ -75,30 +92,34 @@ def playbooks(soc: str | None = None, symptom: str | None = None) -> None:
 @click.option("--dry-run", is_flag=True, help="Simulate without executing commands.")
 def repair(playbook_id: str, serial: str | None = None, dry_run: bool = False) -> None:
     """Execute a repair playbook."""
-    from zenith.engines.playbook_executor import PlaybookExecutor
-    from zenith.knowledge.knowledge_base import get_knowledge_base
+    try:
+        from zenith.engines.playbook_executor import PlaybookExecutor
+        from zenith.knowledge.knowledge_base import get_knowledge_base
 
-    kb = get_knowledge_base()
-    pb = kb.get_playbook(playbook_id)
-    if pb is None:
-        click.echo(f"Playbook not found: {playbook_id}")
-        click.echo("Use 'zenith playbooks' to list available playbooks.")
-        return
+        kb = get_knowledge_base()
+        pb = kb.get_playbook(playbook_id)
+        if pb is None:
+            click.echo(f"Playbook not found: {playbook_id}")
+            click.echo("Use 'zenith playbooks' to list available playbooks.")
+            return
 
-    pbd = {"id": pb.id, "title": pb.title, "symptom": pb.symptom, "steps": pb.steps, "risk_level": pb.risk_level}
-    executor = PlaybookExecutor()
-    executor.dry_run = dry_run
-    click.echo(f"Executing: {pb.title} (risk: {pb.risk_level})")
-    if dry_run:
-        click.echo("*** DRY RUN MODE — no commands will be executed ***")
-    result = executor.execute(pbd, serial or "")
-    status = "SUCCESS" if result.success else "FAILED"
-    click.echo(f"\nResult: {status} ({result.steps_completed}/{result.total_steps} steps)")
-    for r in result.results:
-        icon = "OK" if r.success else "FAIL"
-        click.echo(f"  [{icon}] Step {r.step_number}: {r.description}")
-        if not r.success and r.error:
-            click.echo(f"         Error: {r.error}")
+        pbd = {"id": pb.id, "title": pb.title, "symptom": pb.symptom, "steps": pb.steps, "risk_level": pb.risk_level}
+        executor = PlaybookExecutor()
+        executor.dry_run = dry_run
+        click.echo(f"Executing: {pb.title} (risk: {pb.risk_level})")
+        if dry_run:
+            click.echo("*** DRY RUN MODE — no commands will be executed ***")
+        result = executor.execute(pbd, serial or "")
+        status = "SUCCESS" if result.success else "FAILED"
+        click.echo(f"\nResult: {status} ({result.steps_completed}/{result.total_steps} steps)")
+        for r in result.results:
+            icon = "OK" if r.success else "FAIL"
+            click.echo(f"  [{icon}] Step {r.step_number}: {r.description}")
+            if not r.success and r.error:
+                click.echo(f"         Error: {r.error}")
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
 
 
 @main.command()
@@ -187,8 +208,10 @@ def ai_ask(query: str) -> None:
     if not results:
         click.echo("No results found.")
     for r in results:
-        click.echo(f"[score={r.get('score', '?'):.3f}] {r.get('text', '')[:200]}")
-        meta = r.get('metadata', {})
+        score = r.get("score")
+        score_str = f"{score:.3f}" if isinstance(score, (int, float)) else "N/A"
+        click.echo(f"[score={score_str}] {r.get('text', '')[:200]}")
+        meta = r.get("metadata", {})
         if meta:
             click.echo(f"       {', '.join(f'{k}={v}' for k, v in meta.items())}")
 
@@ -196,13 +219,30 @@ def ai_ask(query: str) -> None:
 @main.command()
 def repairs() -> None:
     """List available repair actions."""
-    """List available repair actions."""
     from zenith.engines.repair import RepairEngine, RepairType
     engine = RepairEngine()
     for rt in RepairType:
         click.echo(f"\n[{rt.value}]")
         for a in engine.list_actions(rt):
             click.echo(f"  {a.id:20s} {a.name:40s} [{a.protocol or 'manual':10s}] {a.soc_target.value}")
+
+
+@main.command()
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON.")
+def profiles(as_json: bool = False) -> None:
+    """List registered device profiles."""
+    from zenith.knowledge.device_registry import get_device_profile_registry
+    reg = get_device_profile_registry()
+    profiles = reg.list_all()
+    if as_json:
+        import json as _json
+        click.echo(_json.dumps([p.model_dump() for p in profiles], indent=2, ensure_ascii=False, default=str))
+    else:
+        click.echo(f"{len(profiles)} device profiles loaded:\n")
+        for p in profiles:
+            click.echo(f"  {p.id:25s} {p.display_name:45s} {p.soc_name}")
+            click.echo(f"    FRP methods: {len(p.frp_methods)} | Modes: {len(p.modes)} | "
+                       f"Partitions: {len(p.partitions)} | AT commands: {len(p.at_commands)}\n")
 
 
 @main.group()
@@ -240,6 +280,55 @@ def token_hunt(duration: int = 30) -> None:
             click.echo(f"Found: {f['match']}")
 
 
+@tool.command()
+@click.option("--cpu-mhz", type=float, default=200.0, help="CPU MHz (default: 200).")
+@click.option("--instructions", type=int, default=1, help="Target instructions to skip.")
+def vcc_matrix(cpu_mhz: float = 200.0, instructions: int = 1) -> None:
+    """VCC Fault Injection Matrix — calculate glitch width."""
+    from zenith.tools.vcc_matrix import calculate
+    r = calculate(cpu_mhz, instructions)
+    click.echo(f"CPU: {r['cpu_mhz']} MHz  |  1 cycle: {r['cycle_ns']} ns")
+    click.echo(f"Glitch width: {r['glitch_width_ns']} ns ({instructions} instruction(s))")
+    click.echo(f"Brown-out threshold: {r['brown_out_reset_ns']} ns")
+    if r["warning"]:
+        click.echo(f"\n  {r['warning_text']}")
+    click.echo(f"\nRecommended: {r['recommendation']}")
+    click.echo(f"Hardware: {', '.join(r['hardware'].values())}")
+
+
+@tool.command()
+@click.option("--dry-run", is_flag=True, help="Scan only, don't inject.")
+def panic_inject(dry_run: bool = False) -> None:
+    """Baseband Panic Injector — crash modem via AT commands."""
+    from zenith.tools.panic_inject import scan_and_inject
+    results = scan_and_inject(dry_run)
+    for r in results:
+        if "error" in r:
+            click.echo(f"Error: {r['error']}")
+        else:
+            click.echo(f"[{r.get('port', '?')}] {r.get('status', r.get('payload', ''))} "
+                       f"{r.get('response', r.get('note', ''))[:120]}")
+
+
+@tool.command("arsenal")
+@click.argument("action_id", required=False)
+def arsenal_run(action_id: str | None = None) -> None:
+    """Diagnostic arsenal shell — 10 actions."""
+    from zenith.tools.arsenal_shell import ARSENAL_ACTIONS, run_action
+    if action_id:
+        r = run_action(action_id)
+        click.echo(f"[{action_id}] {'OK' if r.success else 'FAIL'}")
+        click.echo(r.output[:500])
+        if r.data:
+            import json as _json
+            click.echo(_json.dumps(r.data, indent=2))
+    else:
+        click.echo("LANFEAR ARSENAL 6.0\n")
+        for a in ARSENAL_ACTIONS:
+            click.echo(f"  {a['id']:20s} {a['title']} — {a['desc']}")
+        click.echo("\nUse: zenith tool arsenal <action_id>")
+
+
 @main.group()
 def audit() -> None:
     """Audit log management."""
@@ -273,7 +362,11 @@ def verify() -> None:
 @click.option("--port", type=int, default=8089, help="Bind port.")
 def server(host: str = "127.0.0.1", port: int = 8089) -> None:
     """Start the FastAPI server."""
-    import uvicorn  # type: ignore[import-untyped]
+    try:
+        import uvicorn
+    except ImportError:
+        click.echo("Error: uvicorn is not installed. Run: pip install uvicorn", err=True)
+        sys.exit(1)
 
     from zenith.server.app import app
     click.echo(f"Starting Zenith API server on {host}:{port}")
@@ -283,16 +376,21 @@ def server(host: str = "127.0.0.1", port: int = 8089) -> None:
 @main.command()
 def mcp() -> None:
     """Start the MCP server for AI tool integration."""
+    from zenith.ai.mcp import list_tools
     click.echo("Zenith MCP Server ready (stdout implementation)")
-    click.echo(f"Available tools: {len(__import__('zenith.ai.mcp.__init__', fromlist=['list_tools']).list_tools())}")
+    click.echo(f"Available tools: {len(list_tools())}")
     click.echo("Use 'zenith mcp' to integrate with Claude Desktop or other MCP clients.")
 
 
 @main.command()
 def gui() -> None:
     """Launch the PySide6 desktop GUI."""
-    from zenith.gui import launch_gui
-    launch_gui()
+    try:
+        from zenith.gui import launch_gui
+        launch_gui()
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
 
 
 @main.command()

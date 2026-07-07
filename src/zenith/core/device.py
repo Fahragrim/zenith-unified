@@ -9,6 +9,7 @@ Combines the best of:
 from __future__ import annotations
 
 import contextlib
+import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import datetime, timezone
@@ -242,16 +243,10 @@ class Device(ABC):
         return result.success
 
     async def backup(self, output_path: str) -> ActionResult:
-        return ActionResult(
-            success=False, action="backup", device_serial=self.serial,
-            error="Backup not implemented for this device type",
-        )
+        raise NotImplementedError(f"backup not supported for {self._type.value}")
 
     async def restore(self, backup_path: str) -> ActionResult:
-        return ActionResult(
-            success=False, action="restore", device_serial=self.serial,
-            error="Restore not implemented for this device type",
-        )
+        raise NotImplementedError(f"restore not supported for {self._type.value}")
 
     def register_disconnect_callback(self, cb: Callable[[Device], None]) -> None:
         self._on_disconnect.append(cb)
@@ -270,31 +265,36 @@ class Device(ABC):
 
 
 class DeviceRegistry:
-    """Maps DeviceType → Device class for factory instantiation."""
+    """Thread-safe mapping of DeviceType → Device class for factory instantiation."""
 
     _registry: dict[DeviceType, type[Device]] = {}
+    _lock: threading.Lock = threading.Lock()
 
     @classmethod
     def register(cls, device_type: DeviceType, device_cls: type[Device]) -> None:
-        cls._registry[device_type] = device_cls
+        with cls._lock:
+            cls._registry[device_type] = device_cls
 
     @classmethod
     def create(cls, device_type: DeviceType, identifier: str, **kwargs: Any) -> Device:
-        device_cls = cls._registry.get(device_type)
+        with cls._lock:
+            device_cls = cls._registry.get(device_type)
         if device_cls is None:
             raise ValueError(f"No device class registered for {device_type.value}")
         return device_cls(identifier, device_type=device_type, **kwargs)
 
     @classmethod
     def get_class(cls, device_type: DeviceType) -> type[Device]:
-        device_cls = cls._registry.get(device_type)
+        with cls._lock:
+            device_cls = cls._registry.get(device_type)
         if device_cls is None:
             raise ValueError(f"No device class registered for {device_type.value}")
         return device_cls
 
     @classmethod
     def supported_types(cls) -> list[DeviceType]:
-        return list(cls._registry.keys())
+        with cls._lock:
+            return list(cls._registry.keys())
 
 
 # ─── USB Detection Map ───────────────────────────────────────────────────────
@@ -340,16 +340,17 @@ VID_VENDOR_MAP: dict[int, str] = {
 }
 
 
+# Pre-computed wildcard map for O(1) PID=0 lookups
+_VID_WILDCARD_MAP: dict[int, DeviceType] = {vid: dtype for (vid, pid), dtype in USB_DEVICE_MAP.items() if pid == 0}
+
+
 def detect_device_type_from_usb(vid: int, pid: int) -> DeviceType:
-    """Determine device type from USB VID/PID."""
-    # Exact match first
+    """Determine device type from USB VID/PID. O(1) lookup."""
     key = (vid, pid)
     if key in USB_DEVICE_MAP:
         return USB_DEVICE_MAP[key]
-    # Wildcard match (pid=0)
-    for (map_vid, map_pid), dtype in USB_DEVICE_MAP.items():
-        if map_vid == vid and map_pid == 0:
-            return dtype
+    if vid in _VID_WILDCARD_MAP:
+        return _VID_WILDCARD_MAP[vid]
     return DeviceType.ANDROID
 
 

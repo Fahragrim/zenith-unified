@@ -266,12 +266,13 @@ def _suggest_playbook(modes: list[ConnectionMode]) -> str:
     return ""
 
 
-def _match_profiles(modes: list[ConnectionMode]) -> list[str]:
+def _match_profiles(modes: list[ConnectionMode], usb_hits: list[UsbEndpoint], serial_ports: list[dict[str, Any]]) -> list[str]:
+    """Match detected modes and USB hits against registered device profiles."""
     profiles: list[str] = []
-    sony_modes = {
-        ConnectionMode.SONY_FASTBOOT, ConnectionMode.SONY_FLASHMODE,
-        ConnectionMode.QUALCOMM_EDL, ConnectionMode.ADB, ConnectionMode.FASTBOOT,
-    }
+
+    # Legacy heuristic matching
+    sony_modes = {ConnectionMode.SONY_FASTBOOT, ConnectionMode.SONY_FLASHMODE,
+                  ConnectionMode.QUALCOMM_EDL, ConnectionMode.ADB, ConnectionMode.FASTBOOT}
     nokia_modes = {ConnectionMode.SPRD_BOOTROM, ConnectionMode.SPRD_DIAG, ConnectionMode.ADB}
     samsung_modes = {ConnectionMode.SAMSUNG_DOWNLOAD, ConnectionMode.ADB}
     mtk_modes = {ConnectionMode.MTK_BROM, ConnectionMode.ADB}
@@ -287,6 +288,19 @@ def _match_profiles(modes: list[ConnectionMode]) -> list[str]:
         profiles.append("mediatek_generic")
     if modes and any(m in apple_modes for m in modes):
         profiles.append("apple_generic")
+
+    # USB VID/PID exact matching via DeviceProfileRegistry
+    for hit in usb_hits:
+        try:
+            from zenith.knowledge.device_registry import get_device_profile_registry
+            reg = get_device_profile_registry()
+            matched = reg.match_by_usb(hit.vid, hit.pid)
+            if matched and matched.id not in profiles:
+                profiles.insert(0, matched.id)
+                logger.info(f"Profile match by USB: {matched.display_name} ({hit.vid:04X}:{hit.pid:04X})")
+        except Exception:
+            pass
+
     return profiles
 
 
@@ -364,7 +378,7 @@ def run_discovery(
             lines.append(f"  {p['device']} — {p['description']} ({p['mode']})")
         lines.append("")
 
-    result.matched_profiles = _match_profiles(result.modes)
+    result.matched_profiles = _match_profiles(result.modes, result.usb_hits, result.serial_ports)
     if result.matched_profiles:
         lines.append("[MATCHED PROFILES]")
         for pid in result.matched_profiles:

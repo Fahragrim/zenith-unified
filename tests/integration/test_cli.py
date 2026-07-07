@@ -119,9 +119,15 @@ class TestCLIIntegration:
         # index requires chromadb, so it may fail gracefully
         assert result.exit_code in (0, 2)
 
+    def test_profiles_list(self) -> None:
+        result = self.runner.invoke(main, ["profiles"])
+        assert result.exit_code == 0
+        assert "device profiles" in result.output
+
     def test_help_all_commands(self) -> None:
         result = self.runner.invoke(main, ["--help"])
         assert result.exit_code == 0
         for cmd in ("discover", "ai", "diagnose", "triage", "playbooks", "repair",
-                    "flash", "repairs", "arsenal", "audit", "tool", "server", "mcp", "gui", "version"):
+                    "flash", "repairs", "arsenal", "profiles", "audit",
+                    "tool", "server", "mcp", "gui", "version"):
             assert cmd in result.output

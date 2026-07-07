@@ -16,6 +16,7 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 
 class Tier(Enum):
@@ -68,7 +69,7 @@ class Playbook:
     risk_level: str = "medium"
     prerequisites: list[str] = field(default_factory=list)
     required_tools: list[str] = field(default_factory=list)
-    steps: list[dict] = field(default_factory=list)
+    steps: list[dict[str, Any]] = field(default_factory=list)
     troubleshooting: dict[str, str] = field(default_factory=dict)
 
 
@@ -84,7 +85,7 @@ class Tool:
 
 @dataclass
 class AtlasData:
-    tiers: dict[str, dict] = field(default_factory=dict)
+    tiers: dict[str, dict[str, Any]] = field(default_factory=dict)
     socs: dict[str, SOCInfo] = field(default_factory=dict)
     protocols: dict[str, Protocol] = field(default_factory=dict)
     playbooks: dict[str, Playbook] = field(default_factory=dict)
@@ -96,22 +97,47 @@ class AtlasData:
 class AtlasParser:
     """Parser for DEEP_ATLAS.md that extracts structured knowledge."""
 
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB limit
+
     def __init__(self, atlas_path: Path) -> None:
         self.atlas_path = atlas_path
         self._content: str | None = None
         self._data: AtlasData | None = None
+        self._mtime: float | None = None
 
     @property
     def content(self) -> str:
         if self._content is None:
-            self._content = self.atlas_path.read_text(encoding="utf-8")
+            self._reload_content()
+        assert self._content is not None
         return self._content
+
+    def _reload_content(self) -> None:
+        path = self.atlas_path
+        if not path.exists():
+            self._content = ""
+            self._mtime = None
+            return
+        stat = path.stat()
+        if self._mtime is not None and stat.st_mtime <= self._mtime and self._content is not None:
+            return
+        if stat.st_size > self.MAX_FILE_SIZE:
+            raise ValueError(f"DEEP_ATLAS.md exceeds {self.MAX_FILE_SIZE // 1024 // 1024}MB limit: {stat.st_size} bytes")
+        self._content = path.read_text(encoding="utf-8")
+        self._mtime = stat.st_mtime
 
     @property
     def data(self) -> AtlasData:
         if self._data is None:
             self._data = self.parse()
         return self._data
+
+    def reload(self) -> AtlasData:
+        """Force re-parse from disk, invalidating caches."""
+        self._content = None
+        self._mtime = None
+        self._data = None
+        return self.data
 
     def parse(self) -> AtlasData:
         data = AtlasData()
@@ -121,7 +147,27 @@ class AtlasParser:
         self._parse_tools(data)
         self._parse_secret_codes(data)
         self._apply_defaults(data)
+        self._validate(data)
         return data
+
+    def _validate(self, data: AtlasData) -> None:
+        valid_risk = {"low", "medium", "high", "critical"}
+        for pb in data.playbooks.values():
+            if pb.risk_level.lower() not in valid_risk:
+                pb.risk_level = "medium"
+        for proto in data.protocols.values():
+            if proto.risk_level.lower() not in valid_risk:
+                proto.risk_level = "medium"
+            if proto.usb_vid:
+                try:
+                    int(proto.usb_vid, 16)
+                except (ValueError, TypeError):
+                    proto.usb_vid = None
+            if proto.usb_pid:
+                try:
+                    int(proto.usb_pid, 16)
+                except (ValueError, TypeError):
+                    proto.usb_pid = None
 
     def _extract_section(self, content: str, title: str) -> str | None:
         lines = content.split("\n")
@@ -214,7 +260,7 @@ class AtlasParser:
             data.protocols[p.name.lower()] = p
 
     def _parse_playbooks(self, data: AtlasData) -> None:
-        defaults: list[tuple] = [
+        defaults: list[tuple[Any, ...]] = [
             ("hard-brick-qualcomm", "Hard Brick — Qualcomm", "hard-brick", "qualcomm", "high", [
                 {"step": 1, "desc": "Identify 9008 in Device Manager"},
                 {"step": 2, "desc": "Force EDL via test point or cable"},
@@ -314,7 +360,7 @@ class AtlasParser:
         import json
         return json.dumps(self._serializable(), indent=2, ensure_ascii=False)
 
-    def _serializable(self) -> dict:
+    def _serializable(self) -> dict[str, Any]:
         return {
             "socs": {k: {"name": v.name, "manufacturer": v.manufacturer, "boot_chain": v.boot_chain,
                         "recovery_modes": v.recovery_modes, "tools": v.tools} for k, v in self.data.socs.items()},
