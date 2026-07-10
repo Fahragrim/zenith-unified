@@ -1,0 +1,254 @@
+{
+  "id": "samsung_a52_sm-a525f",
+  "manufacturer": "Samsung",
+  "model": "Galaxy A52 SM-A525F",
+  "codename": "a52q",
+  "soc_vendor": "Qualcomm",
+  "soc_name": "Snapdragon 720G (SM7125)",
+  "android_version": "Android 11-14",
+  "storage_type": "UFS 2.1",
+  "bootloader_locked": true,
+  "metadata": {
+    "boot_chain": "PBL → XBL → ABL → Linux Kernel",
+    "sahara_edl_supported": true,
+    "firehose_required": true,
+    "anti_rollback": "ARB v2 (QFPROM-baserad)",
+    "frp_location": "persist partition",
+    "max_download_size": 1048576,
+    "sector_size": 4096,
+    "slot_count": 2,
+    "usb_vid": "0x04E8"
+  },
+  "modes": [
+    {
+      "name": "edl",
+      "display_name": "Emergency Download Mode (EDL / 9008)",
+      "usb_ids": [{"vid": 1256, "pid": 36872}],
+      "port_description_patterns": ["9008", "QDLoader", "Qualcomm HS-USB"],
+      "entry_methods": [
+        "adb reboot edl (kräver root)",
+        "EDL cable (Deep Flash Cable / Test point)",
+        "Test points under motherboard shield — kortslut EDL TP till GND"
+      ],
+      "exit_methods": ["Power hold 10s", "edl reset"],
+      "tools": ["edl (bkerler)", "QFIL", "QPST", "Odin"],
+      "description": "Qualcomm EDL-läge. Samsung använder proprietär firehose. Kräver auth-bypass eller signed loader."
+    },
+    {
+      "name": "download",
+      "display_name": "Download Mode (Odin)",
+      "usb_ids": [{"vid": 1256, "pid": 26717}],
+      "port_description_patterns": ["Samsung Download", "Odin", "MSM"],
+      "entry_methods": [
+        "Volym Upp + Volym Ner + Power vid uppstart",
+        "adb reboot download"
+      ],
+      "exit_methods": ["Power hold 10s", "Odin reset"],
+      "tools": ["Odin", "Heimdall", "Frija", "SamFirm"],
+      "description": "Samsung Download Mode via Odin-protokollet. Används för officiell firmware-flashing via Samsung-proprietärt protokoll."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot / Bootloader",
+      "usb_ids": [{"vid": 1256, "pid": 26665}],
+      "port_description_patterns": ["fastboot", "Samsung"],
+      "entry_methods": [
+        "adb reboot bootloader",
+        "Volym Upp + Volym Ner + Power (håll tills fastboot-text syns)"
+      ],
+      "exit_methods": ["fastboot reboot", "fastboot continue"],
+      "tools": ["fastboot"],
+      "description": "Fastboot-läge på Samsung A52 — bootloader är låst på de flesta regioner."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB (USB Debugging)",
+      "usb_ids": [],
+      "port_description_patterns": ["ADB", "Android"],
+      "entry_methods": ["Aktivera USB-debugging i Utvecklaralternativ"],
+      "exit_methods": ["adb disconnect"],
+      "tools": ["adb", "scrcpy"],
+      "description": "Standard ADB-läge. Kräver USB-debugging aktiverat."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery Mode",
+      "usb_ids": [],
+      "port_description_patterns": ["recovery"],
+      "entry_methods": [
+        "adb reboot recovery",
+        "Volym Upp + Power vid uppstart"
+      ],
+      "exit_methods": ["Reboot system now"],
+      "tools": ["adb"],
+      "description": "Stock Android Recovery."
+    },
+    {
+      "name": "diag",
+      "display_name": "Qualcomm Diag Mode",
+      "usb_ids": [{"vid": 1256, "pid": 36925}],
+      "port_description_patterns": ["901D", "Diag", "Samsung Diag"],
+      "entry_methods": [
+        "setprop persist.usb.eng 1 (kräver root)",
+        "*#0808# → DM+MODEM+ADB"
+      ],
+      "exit_methods": ["setprop persist.usb.eng 0", "Reboot"],
+      "tools": ["QPST", "QXDM"],
+      "description": "Qualcomm Diag Mode. Används för NVRAM, IMEI-reparation, RF-kalibrering."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "edl_frp_erase",
+      "name": "EDL FRP Erase via firehose",
+      "category": "EDL",
+      "success_rate": 0.85,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "EDL-läge aktivt (test points eller EDL-kabel)",
+        "A525F firehose-loader",
+        "edl.py tool"
+      ],
+      "steps": [
+        {"step": 1, "description": "Tvinga EDL-läge via testpunkter eller EDL-kabel"},
+        {"step": 2, "description": "Verifiera: Enhetshanteraren visar Qualcomm 9008"},
+        {"step": 3, "description": "Ladda firehose: edl qfh prog_firehose_ddr_SM7125.mbn"},
+        {"step": 4, "description": "Eradera FRP: edl e frp"},
+        {"step": 5, "description": "Eradera persist: edl e persist"},
+        {"step": 6, "description": "Starta om: edl reset"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": null,
+      "commands": [
+        "edl qfh prog_firehose_ddr_SM7125.mbn",
+        "edl e frp",
+        "edl e persist",
+        "edl reset"
+      ]
+    },
+    {
+      "id": "odin_combination",
+      "name": "Odin Combination Firmware FRP",
+      "category": "Download",
+      "success_rate": 0.90,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Enhet i Download Mode",
+        "A525F Combination Firmware (.tar)",
+        "Odin3 installerat",
+        "Samsung USB-drivrutin"
+      ],
+      "steps": [
+        {"step": 1, "description": "Ladda ner A525F Combination Firmware"},
+        {"step": 2, "description": "Starta enhet i Download Mode (Vol Up + Vol Down + Power)"},
+        {"step": 3, "description": "Öppna Odin3"},
+        {"step": 4, "description": "Ladda Kombination-firmware i AP/CSC slot"},
+        {"step": 5, "description": "Klicka Start → vänta tills PASS visas"},
+        {"step": 6, "description": "Enhet bootar i Service Mode → utför Factory Reset"}
+      ],
+      "requires_screen": true,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": null,
+      "commands": []
+    },
+    {
+      "id": "adb_gms_disable",
+      "name": "ADB: Inaktivera GMS/GSF",
+      "category": "ADB",
+      "success_rate": 0.80,
+      "risk_level": "LOW",
+      "prerequisites": ["USB-debugging aktiverat", "ADB-anslutning"],
+      "steps": [
+        {"step": 1, "description": "adb shell pm disable-user --user 0 com.google.android.gms"},
+        {"step": 2, "description": "adb shell pm disable-user --user 0 com.google.android.gsf"},
+        {"step": 3, "description": "adb reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": true,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Gratis",
+      "guide_file": null,
+      "commands": [
+        "adb shell pm disable-user --user 0 com.google.android.gms",
+        "adb shell pm disable-user --user 0 com.google.android.gsf",
+        "adb reboot"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "samsung_official",
+      "name": "Samsung Official Bootloader Unlock",
+      "success_rate": 1.0,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Samsung-konto",
+        "Bootloader unlock enabled in Developer Options",
+        "Region som stöder unlock (ej USA/Canada-modeller)"
+      ],
+      "steps": [
+        {"step": 1, "description": "Aktivera OEM Unlock i Inställningar > Utvecklaralternativ"},
+        {"step": 2, "description": "Starta i Download Mode: Vol Up + Vol Down + Power"},
+        {"step": 3, "description": "Håll Vol Up länge för att låsa upp bootloader"},
+        {"step": 4, "description": "VARNING: Data raderas! Enheten startas om automatiskt"}
+      ],
+      "commands": [],
+      "guide_file": null,
+      "official": true
+    }
+  ],
+  "firehoses": [
+    {"filename": "prog_firehose_ddr_SM7125.mbn", "priority": 1, "notes": "Primary — Snapdragon 720G firehose loader"},
+    {"filename": "prog_firehose_ddr_7nm.mbn", "priority": 2, "notes": "Generic 7nm Qualcomm firehose (fallback)"}
+  ],
+  "test_points": [
+    {
+      "label": "EDL TP",
+      "location": "Under motherboard shield, near SoC",
+      "coordinates": null,
+      "notes": "Kortslut till GND medan USB ansluts. Exakt position varierar — sök efter 'a52 edl test point' på XDA."
+    }
+  ],
+  "partitions": [
+    {"name": "frp", "purpose": "Factory Reset Protection", "frp_relevant": true, "backup_before_write": true},
+    {"name": "persist", "purpose": "Persistent FRP-data", "frp_relevant": true, "backup_before_write": true},
+    {"name": "userdata", "purpose": "Användardata", "frp_relevant": true, "backup_before_write": true},
+    {"name": "boot", "purpose": "Kernel + ramdisk", "frp_relevant": false, "backup_before_write": true},
+    {"name": "system", "purpose": "Android OS", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vendor", "purpose": "Vendor-moduler", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta", "purpose": "Verified Boot metadata", "frp_relevant": false, "backup_before_write": true},
+    {"name": "dtbo", "purpose": "Device Tree Blob Overlay", "frp_relevant": false, "backup_before_write": true},
+    {"name": "super", "purpose": "Logical partition (dynamic)", "frp_relevant": false, "backup_before_write": true},
+    {"name": "modem", "purpose": "Baseband firmware", "frp_relevant": false, "backup_before_write": true}
+  ],
+  "at_commands": [
+    {"command": "AT+CFUN=1,1", "description": "Full modem reset", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+EGMR=0,7", "description": "Läs IMEI slot 1", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CPIN?", "description": "SIM-lås status", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+COPS?", "description": "Nätverksoperatör", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CSQ", "description": "Signalstyrka", "modifies_nvram": false, "risk_level": "LOW"}
+  ],
+  "service_codes": [
+    {"code": "*#06#", "function": "IMEI-visning"},
+    {"code": "*#0808#", "function": "USB-inställningar (Diag/ADB/Modem)"},
+    {"code": "*#9900#", "function": "System Dump Mode"},
+    {"code": "*#9090#", "function": "Diagnostisk konfiguration"},
+    {"code": "*#*#4636#*#*", "function": "Phone Information"},
+    {"code": "*#*#2663#*#*", "function": "Skärm-touch version"},
+    {"code": "*#0*#", "function": "General Test Mode"},
+    {"code": "*#12580*369#", "function": "Mjukvaruinfo"},
+    {"code": "*#85876386#", "function": "Service Mode (Samsung OneUI)"},
+    {"code": "*#*#44336#*#*", "function": "Build-info"},
+    {"code": "*#*#232338#*#*", "function": "WiFi MAC"},
+    {"code": "*#*#1472365#*#*", "function": "GPS-test"}
+  ],
+  "talkback_shortcuts": {}
+}

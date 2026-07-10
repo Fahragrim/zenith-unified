@@ -6,8 +6,10 @@ Beräknar glitch-bredd för CPU klockcykel-manipulation (VCC/EMFI-attacker).
 
 from __future__ import annotations
 
+from typing import Any
 
-def calculate(cpu_mhz: float = 200.0, target_instructions: int = 1) -> dict:
+
+def calculate(cpu_mhz: float = 200.0, target_instructions: int = 1) -> dict[str, Any]:
     """Calculate recommended glitch width for VCC fault injection.
 
     Args:
@@ -48,7 +50,7 @@ def calculate(cpu_mhz: float = 200.0, target_instructions: int = 1) -> dict:
     }
 
 
-def matrix(cpu_min: int = 100, cpu_max: int = 400, step: int = 50) -> list[dict]:
+def matrix(cpu_min: int = 100, cpu_max: int = 400, step: int = 50) -> list[dict[str, Any]]:
     """Generate a fault injection matrix for a range of CPU frequencies."""
     results = []
     for mhz in range(cpu_min, cpu_max + 1, step):

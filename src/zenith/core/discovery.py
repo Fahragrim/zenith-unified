@@ -119,7 +119,7 @@ def scan_usb_pyusb() -> list[UsbEndpoint]:
     """Scan USB bus via pyusb for known device signatures."""
     hits: list[UsbEndpoint] = []
     try:
-        import usb.core  # type: ignore[import-untyped]
+        import usb.core
     except ImportError:
         logger.debug("pyusb not available — USB scan skipped")
         return hits

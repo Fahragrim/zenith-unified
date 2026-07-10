@@ -86,6 +86,6 @@ def run_all() -> list[ArsenalResult]:
     return [run_action(a["id"]) for a in ARSENAL_ACTIONS]
 
 
-def list_actions() -> list[dict]:
+def list_actions() -> list[dict[str, Any]]:
     return [{"id": a["id"], "title": a["title"], "desc": a["desc"],
              "requires_fastboot": a.get("requires_fastboot", False)} for a in ARSENAL_ACTIONS]

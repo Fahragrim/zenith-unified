@@ -10,7 +10,7 @@ import contextlib
 import struct
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Any
+from typing import Any, cast
 
 from loguru import logger
 
@@ -98,8 +98,8 @@ class SPRDDevice:
         self._ep_out: int = -1
 
     async def open(self) -> bool:
-        import usb.core  # type: ignore[import-untyped]
-        import usb.util  # type: ignore[import-untyped]
+        import usb.core
+        import usb.util
         dev = usb.core.find(idVendor=SPRD_VID, idProduct=SPRD_PID)
         if dev is None:
             return False
@@ -135,7 +135,7 @@ class SPRDDevice:
     async def close(self) -> None:
         if self._dev is not None:
             try:
-                import usb.util  # type: ignore[import-untyped]
+                import usb.util
                 usb.util.dispose_resources(self._dev)
             except Exception:
                 pass
@@ -155,7 +155,7 @@ class HDLCBootROM:
         data = resp.get("data")
         if data is None:
             raise RuntimeError("No version data")
-        return data[:-1].decode("utf-8", errors="replace")
+        return cast(str, data[:-1].decode("utf-8", errors="replace"))
 
     async def send_payload(self, address: int, data: bytes) -> None:
         header = struct.pack("<II", address, len(data))
@@ -179,7 +179,7 @@ class HDLCBootROM:
         if resp["type"] != BootROMCmd.REP_ACK:
             raise RuntimeError(f"Expected REP_ACK, got {resp['type']}")
 
-    async def _receive_packet(self) -> dict:
+    async def _receive_packet(self) -> dict[str, Any]:
         state = 0  # 0=START, 1=UNESCAPED, 2=ESCAPED, 3=END
         buf = bytearray(HDLC_FRAME_MAX_SIZE)
         pos = 0
@@ -256,7 +256,7 @@ class Socrates:
         data = resp.get("data")
         if data is None:
             return "unknown"
-        return data.decode("utf-8", errors="replace").rstrip("\x00")
+        return cast(str, data.decode("utf-8", errors="replace").rstrip("\x00"))
 
     async def read32(self, address: int) -> int:
         await self._send(SocratesCmd.REQ_READ_32, struct.pack("<Q", address))
@@ -266,7 +266,7 @@ class Socrates:
         data = resp.get("data")
         if data is None or len(data) < 4:
             raise RuntimeError("Invalid read32 response")
-        return struct.unpack("<I", data[:4])[0]
+        return cast(int, struct.unpack("<I", data[:4])[0])
 
     async def write32(self, address: int, value: int) -> None:
         await self._send(SocratesCmd.REQ_WRITE_32, struct.pack("<QI", address, value))
@@ -288,14 +288,14 @@ class Socrates:
         data = resp.get("data")
         if data is None or len(data) < 4:
             raise RuntimeError("Invalid sec_count")
-        return struct.unpack("<I", data[:4])[0]
+        return cast(int, struct.unpack("<I", data[:4])[0])
 
     async def mmc_read_block(self, lba: int) -> bytes:
         await self._send(SocratesCmd.REQ_MMC_READ_SINGLE_BLOCK, struct.pack("<I", lba))
         resp = await self._receive()
         if resp["type"] != SocratesCmd.RSP_MMC_READ_SINGLE_BLOCK:
             raise RuntimeError(f"mmc_read_block: {resp['type']}")
-        return resp.get("data", b"")
+        return cast(bytes, resp.get("data", b""))
 
     async def mmc_write_block(self, lba: int, data: bytes) -> None:
         await self._send(SocratesCmd.REQ_MMC_WRITE_BLOCK, struct.pack("<I", lba) + data)
@@ -303,7 +303,7 @@ class Socrates:
         if resp["type"] != SocratesCmd.RSP_OK:
             raise RuntimeError(f"mmc_write_block: {resp['type']}")
 
-    async def _receive(self) -> dict:
+    async def _receive(self) -> dict[str, Any]:
         while len(self._fifo) < 4:
             self._fifo.extend(await self.device.transfer_in(1024))
         pkt_type = int.from_bytes(self._fifo[0:2], "little")

@@ -49,6 +49,7 @@ backups/
 
 # Runtime data
 data/chroma_db/
+src/zenith/data/chroma_db/
 *.jsonl
 
 # Secrets

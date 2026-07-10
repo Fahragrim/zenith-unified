@@ -2,6 +2,7 @@
 
 Dashboard · Diagnostics · Repair · Arsenal · Settings
 """
+
 from __future__ import annotations
 
 import sys
@@ -28,8 +29,8 @@ class ZenithMainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle(f"Zenith Unified v{__version__}")
-        self.resize(1200, 800)
-        self.setMinimumSize(900, 600)
+        self.resize(1300, 900)
+        self.setMinimumSize(1000, 700)
 
         self._tabs: dict[str, QWidget] = {}
         self._setup_ui()
@@ -54,6 +55,11 @@ class ZenithMainWindow(QMainWindow):
         self.tab_widget.addTab(self._tabs["diagnostics"], "Diagnostics")
         self.tab_widget.addTab(self._tabs["repair"], "Repair")
         self.tab_widget.addTab(self._tabs["arsenal"], "Arsenal")
+
+        # Wire dashboard repair button to repair tab
+        dash = self._tabs["dashboard"]
+        if hasattr(dash, "repair_btn"):
+            dash.repair_btn.clicked.connect(lambda: self.tab_widget.setCurrentIndex(2))
 
         layout.addWidget(self.tab_widget)
 

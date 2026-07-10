@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lanfear-zenith"
-version = "0.1.0"
+version = "0.5.0.dev0"
 description = "Zenith Unified — AI-powered USB/ADB tool for Android phone repair, data recovery, diagnostics, and flashing."
 readme = "README.md"
 license = { text = "MIT" }
@@ -31,6 +31,8 @@ keywords = [
     "unisoc",
     "samsung",
     "sony",
+    "firehose",
+    "sahara",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -38,15 +40,18 @@ classifiers = [
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
     "Topic :: Utilities",
     "Topic :: System :: Recovery Tools",
     "Topic :: System :: Hardware",
+    "Topic :: System :: Archiving :: Backup",
     "Environment :: Console",
     "Environment :: Win32 (MS Windows)",
     "Environment :: X11 Applications :: Qt",
@@ -85,7 +90,6 @@ ai = [
 gui = [
     "PySide6>=6.6",
     "qtawesome>=1.3",
-    "customtkinter>=5.2.0",
 ]
 server = [
     "fastapi>=0.100",
@@ -105,14 +109,19 @@ dev = [
 [project.scripts]
 zenith = "zenith.cli.main:main"
 zenith-server = "zenith.server.app:main"
+zenith-gui = "zenith.gui.pyside6.main_window:main"
 
 [project.urls]
 Homepage = "https://github.com/lanfear/zenith-unified"
 Repository = "https://github.com/lanfear/zenith-unified.git"
 Issues = "https://github.com/lanfear/zenith-unified/issues"
+Documentation = "https://github.com/lanfear/zenith-unified#readme"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+zenith = ["data/**/*.json", "data/**/*.yaml", "data/**/*.md"]
 
 [tool.ruff]
 line-length = 120

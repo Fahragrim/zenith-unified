@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+*.egg
+*.whl
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Test & lint
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+tests/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker/*.yml
+docker/*.override.yml
+
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+
+# Chroma vector DB (large, not needed in image)
+data/chroma_db/

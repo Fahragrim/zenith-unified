@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import time
+from typing import Any
 
 OEM_COMMANDS = [
     "unlock", "unlock-go", "device-info", "edl", "reboot-recovery",
@@ -13,9 +14,9 @@ OEM_COMMANDS = [
 ]
 
 
-def fuzz_oem_commands(fastboot_path: str = "fastboot", delay: float = 0.5) -> list[dict]:
+def fuzz_oem_commands(fastboot_path: str = "fastboot", delay: float = 0.5) -> list[dict[str, Any]]:
     """Fuzz fastboot OEM commands and report interesting responses."""
-    results: list[dict] = []
+    results: list[dict[str, Any]] = []
     for cmd in OEM_COMMANDS:
         try:
             proc = subprocess.run(

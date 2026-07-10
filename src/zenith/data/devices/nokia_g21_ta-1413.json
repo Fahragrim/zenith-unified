@@ -1,0 +1,219 @@
+{
+  "id": "nokia_g21",
+  "manufacturer": "Nokia",
+  "model": "G21 TA-1413",
+  "codename": "capella",
+  "soc_vendor": "Unisoc",
+  "soc_name": "T606 (SHARKL5)",
+  "android_version": "Android 11-13",
+  "bootloader_locked": true,
+  "storage_type": "eMMC 5.1",
+  "metadata": {
+    "boot_chain": "BootROM -> FDL1 -> FDL2 -> Linux",
+    "sprd_chip_family": "SHARKL5",
+    "fdl1_base": 20480,
+    "fdl2_base": 2667576832,
+    "cve_exec_addr": 20200
+  },
+  "modes": [
+    {
+      "name": "sprd_bootrom",
+      "display_name": "SPRD BootROM",
+      "usb_ids": [
+        {
+          "vid": 6018,
+          "pid": 19712
+        }
+      ],
+      "port_description_patterns": [
+        "SPRD",
+        "1782:4D00",
+        "Unisoc"
+      ],
+      "entry_methods": [
+        "Test point to GND",
+        "Volym buttons + USB"
+      ],
+      "exit_methods": [
+        "sfd_tool reset",
+        "Power hold 10s"
+      ],
+      "tools": [
+        "sfd_tool",
+        "spd_dump",
+        "ResearchDownload"
+      ],
+      "description": "Unisoc SPRD BootROM. CVE-2022-38694 applicable."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "fastboot"
+      ],
+      "entry_methods": [
+        "adb reboot bootloader"
+      ],
+      "exit_methods": [
+        "fastboot reboot"
+      ],
+      "tools": [
+        "fastboot"
+      ],
+      "description": "Fastboot."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "ADB"
+      ],
+      "entry_methods": [
+        "Enable USB debugging"
+      ],
+      "exit_methods": [
+        "adb disconnect"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "ADB."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "recovery"
+      ],
+      "entry_methods": [
+        "adb reboot recovery"
+      ],
+      "exit_methods": [
+        "Reboot system now"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "Stock recovery."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "sprd_brom_frp_erase",
+      "name": "SPRD BROM FRP Erase",
+      "category": "BROM",
+      "success_rate": 0.9,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "SPRD BootROM active",
+        "FDL1/FDL2 files"
+      ],
+      "steps": [],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "commands": [
+        "sfd_tool fdl FDL1.bin 0x5000 fdl FDL2.bin 0x9efffe00 exec erase_part userdata reset"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "cve2022_38694",
+      "name": "CVE-2022-38694 Unlock",
+      "success_rate": 0.8,
+      "risk_level": "HIGH",
+      "prerequisites": [
+        "BootROM test point",
+        "CVE exploit files"
+      ],
+      "steps": [],
+      "commands": [],
+      "official": false
+    }
+  ],
+  "partitions": [
+    {
+      "name": "userdata",
+      "purpose": "User data",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "frp",
+      "purpose": "FRP",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "misc",
+      "purpose": "FRP wipe",
+      "frp_relevant": true,
+      "backup_before_write": false
+    },
+    {
+      "name": "splloader",
+      "purpose": "SPL",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "uboot",
+      "purpose": "U-Boot",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "boot",
+      "purpose": "Kernel",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "system",
+      "purpose": "System",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "vendor",
+      "purpose": "Vendor",
+      "frp_relevant": false,
+      "backup_before_write": true
+    }
+  ],
+  "at_commands": [
+    {
+      "command": "AT+CFUN=1,1",
+      "description": "Reset modem",
+      "modifies_nvram": false,
+      "risk_level": "LOW"
+    },
+    {
+      "command": "AT+EGMR=0,7",
+      "description": "Read IMEI",
+      "modifies_nvram": false,
+      "risk_level": "LOW"
+    }
+  ],
+  "service_codes": [
+    {
+      "code": "*#06#",
+      "function": "IMEI"
+    },
+    {
+      "code": "*#*#864#*#*",
+      "function": "Engineering mode"
+    },
+    {
+      "code": "*#*#4636#*#*",
+      "function": "Phone info"
+    }
+  ],
+  "talkback_shortcuts": {}
+}

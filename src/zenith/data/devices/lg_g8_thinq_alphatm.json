@@ -1,0 +1,186 @@
+{
+  "id": "lg_g8_thinq",
+  "manufacturer": "LG",
+  "model": "G8 ThinQ",
+  "codename": "alphatm",
+  "soc_vendor": "Qualcomm",
+  "soc_name": "Snapdragon 855 (SM8150)",
+  "android_version": "Android 9-12",
+  "storage_type": "UFS 2.1",
+  "bootloader_locked": true,
+  "metadata": {
+    "boot_chain": "PBL -> XBL -> ABL -> Linux Kernel",
+    "edl_pid": "0x9008",
+    "edl_vid": "0x05C6",
+    "sahara_edl_supported": true,
+    "firehose_required": true,
+    "frp_location": "persist + frp partition",
+    "sector_size": 4096,
+    "slot_count": 2,
+    "usb_vid": "0x1004",
+    "lg_download_mode": "LG UP / LG Flash Tool required"
+  },
+  "modes": [
+    {
+      "name": "edl",
+      "display_name": "Emergency Download (EDL / 9008)",
+      "usb_ids": [{"vid": 1478, "pid": 36872}],
+      "port_description_patterns": ["9008", "QDLoader", "Qualcomm"],
+      "entry_methods": ["adb reboot edl (root required)", "Test point on motherboard"],
+      "exit_methods": ["Power hold 10s", "edl reset"],
+      "tools": ["edl (bkerler)", "QFIL"],
+      "description": "Qualcomm EDL via Sahara + Firehose. LG uses standard Qualcomm firehose."
+    },
+    {
+      "name": "download",
+      "display_name": "LG Download Mode (LG UP)",
+      "usb_ids": [{"vid": 4100, "pid": 20768}],
+      "port_description_patterns": ["LG Download", "LG USB", "1004:5120"],
+      "entry_methods": ["Volym Upp + USB anslutning", "adb reboot download"],
+      "exit_methods": ["Power hold 10s"],
+      "tools": ["LG UP", "LG Flash Tool 2019"],
+      "description": "LG Download Mode for firmware flashing via LG UP tool. Proprietary LG protocol."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot (limited on LG)",
+      "usb_ids": [{"vid": 4100, "pid": 20720}],
+      "port_description_patterns": ["fastboot", "LG"],
+      "entry_methods": ["adb reboot bootloader"],
+      "exit_methods": ["fastboot reboot"],
+      "tools": ["fastboot"],
+      "description": "Fastboot on LG is limited. Most partition flash operations require LG UP instead."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB (USB Debugging)",
+      "usb_ids": [{"vid": 4100, "pid": 20704}],
+      "port_description_patterns": ["ADB", "Android", "LG"],
+      "entry_methods": ["Enable USB debugging in Developer Options"],
+      "exit_methods": ["adb disconnect"],
+      "tools": ["adb", "scrcpy"],
+      "description": "Standard ADB mode."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery Mode",
+      "usb_ids": [],
+      "port_description_patterns": ["recovery"],
+      "entry_methods": ["adb reboot recovery", "Volym Upp + Power"],
+      "exit_methods": ["Reboot system now"],
+      "tools": ["adb"],
+      "description": "Stock Recovery."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "edl_frp_erase",
+      "name": "EDL FRP Erase via Firehose",
+      "category": "EDL",
+      "success_rate": 0.88,
+      "risk_level": "MEDIUM",
+      "prerequisites": ["EDL mode active", "SM8150 firehose programmer"],
+      "steps": [
+        {"step": 1, "description": "Enter EDL via test point or edl cable"},
+        {"step": 2, "description": "Load firehose: edl qfh prog_firehose_ddr_SM8150.mbn"},
+        {"step": 3, "description": "Erase FRP: edl e frp"},
+        {"step": 4, "description": "Erase persist: edl e persist"},
+        {"step": 5, "description": "Reset: edl reset"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": ["edl:e --partition=frp", "edl:e --partition=persist", "edl reset"]
+    },
+    {
+      "id": "adb_gms_disable",
+      "name": "ADB disable GMS/GSF",
+      "category": "ADB",
+      "success_rate": 0.75,
+      "risk_level": "LOW",
+      "prerequisites": ["USB debugging enabled"],
+      "steps": [
+        {"step": 1, "description": "adb shell pm disable-user --user 0 com.google.android.gms"},
+        {"step": 2, "description": "adb shell pm disable-user --user 0 com.google.android.gsf"},
+        {"step": 3, "description": "adb reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": true,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": [
+        "adb_shell:pm disable-user --user 0 com.google.android.gms",
+        "adb_shell:pm disable-user --user 0 com.google.android.gsf",
+        "adb:reboot"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "lg_official",
+      "name": "LG Official Bootloader Unlock (discontinued)",
+      "success_rate": 0.0,
+      "risk_level": "LOW",
+      "prerequisites": ["LG mobile developer site — shut down 2021"],
+      "steps": [{"step": 1, "description": "LG closed bootloader unlock service when exiting mobile business."}],
+      "commands": [],
+      "guide_file": null,
+      "official": true
+    },
+    {
+      "id": "edl_unlock",
+      "name": "EDL Firehose Bootloader Unlock (patched abl)",
+      "success_rate": 0.50,
+      "risk_level": "CRITICAL",
+      "prerequisites": ["EDL mode", "Firehose with abl write access", "Patched ABL image"],
+      "steps": [
+        {"step": 1, "description": "Dump ABL: edl r abl abl_stock.img"},
+        {"step": 2, "description": "Patch ABL to disable verified boot"},
+        {"step": 3, "description": "Flash patched ABL: edl w abl abl_patched.img"},
+        {"step": 4, "description": "Reset and unlock via fastboot"}
+      ],
+      "commands": ["edl:r --partition=abl --outfile=abl_stock.img"],
+      "guide_file": null,
+      "official": false
+    }
+  ],
+  "firehoses": [
+    {"filename": "prog_firehose_ddr_SM8150.mbn", "priority": 1, "notes": "Snapdragon 855 firehose loader"},
+    {"filename": "prog_firehose_ddr_SM8150_LG.mbn", "priority": 2, "notes": "LG-specific variant"}
+  ],
+  "test_points": [
+    {"label": "EDL TP", "location": "Near USB-C connector under metal shield", "coordinates": null, "notes": "Kortslut till GND medan USB ansluts. LG G8 EDL test point position documented on XDA."}
+  ],
+  "partitions": [
+    {"name": "frp", "purpose": "Factory Reset Protection", "frp_relevant": true, "backup_before_write": true},
+    {"name": "persist", "purpose": "Persistent data", "frp_relevant": true, "backup_before_write": true},
+    {"name": "userdata", "purpose": "User data", "frp_relevant": true, "backup_before_write": true},
+    {"name": "boot", "purpose": "Kernel + ramdisk", "frp_relevant": false, "backup_before_write": true},
+    {"name": "system", "purpose": "Android OS", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vendor", "purpose": "Vendor modules", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta", "purpose": "Verified Boot metadata", "frp_relevant": false, "backup_before_write": true},
+    {"name": "dtbo", "purpose": "Device Tree Blob Overlay", "frp_relevant": false, "backup_before_write": true},
+    {"name": "super", "purpose": "Dynamic partitions", "frp_relevant": false, "backup_before_write": true},
+    {"name": "modem", "purpose": "Baseband firmware", "frp_relevant": false, "backup_before_write": true},
+    {"name": "abl", "purpose": "ABL bootloader", "frp_relevant": false, "backup_before_write": true},
+    {"name": "xbl", "purpose": "XBL bootloader", "frp_relevant": false, "backup_before_write": true}
+  ],
+  "at_commands": [
+    {"command": "AT+CFUN=1,1", "description": "Full modem reset", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+EGMR=0,7", "description": "Read IMEI slot 1", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CPIN?", "description": "SIM lock status", "modifies_nvram": false, "risk_level": "LOW"}
+  ],
+  "service_codes": [
+    {"code": "*#06#", "function": "IMEI display"},
+    {"code": "*#546368#*820#", "function": "LG Service Menu (G8 LM-G820)"},
+    {"code": "*#*#4636#*#*", "function": "Phone Information"},
+    {"code": "*#0808#", "function": "USB settings"},
+    {"code": "*#*#3646633#*#*", "function": "Engineering Mode"}
+  ],
+  "talkback_shortcuts": {}
+}

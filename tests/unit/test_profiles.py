@@ -12,7 +12,7 @@ from zenith.knowledge.device_registry import DeviceProfileRegistry, get_device_p
 
 class TestDeviceProfile:
     def test_load_sony_xz2(self) -> None:
-        profiles_dir = Path(__file__).resolve().parents[2] / "data" / "devices"
+        profiles_dir = Path(__file__).resolve().parents[2] / "src" / "zenith" / "data" / "devices"
         path = profiles_dir / "sony_xz2_h8266.json"
         assert path.exists(), f"Profile not found: {path}"
         profile = DeviceProfile.from_json(path)
@@ -26,7 +26,7 @@ class TestDeviceProfile:
         assert len(profile.firehoses) >= 1
 
     def test_load_nokia_c32(self) -> None:
-        profiles_dir = Path(__file__).resolve().parents[2] / "data" / "devices"
+        profiles_dir = Path(__file__).resolve().parents[2] / "src" / "zenith" / "data" / "devices"
         path = profiles_dir / "nokia_c32_ta1534.json"
         assert path.exists(), f"Profile not found: {path}"
         profile = DeviceProfile.from_json(path)
@@ -39,12 +39,12 @@ class TestDeviceProfile:
         assert len(profile.modes) >= 5
 
     def test_display_name(self) -> None:
-        profiles_dir = Path(__file__).resolve().parents[2] / "data" / "devices"
+        profiles_dir = Path(__file__).resolve().parents[2] / "src" / "zenith" / "data" / "devices"
         profile = DeviceProfile.from_json(profiles_dir / "sony_xz2_h8266.json")
         assert "Sony Xperia XZ2" in profile.display_name
 
     def test_get_mode(self) -> None:
-        profiles_dir = Path(__file__).resolve().parents[2] / "data" / "devices"
+        profiles_dir = Path(__file__).resolve().parents[2] / "src" / "zenith" / "data" / "devices"
         profile = DeviceProfile.from_json(profiles_dir / "sony_xz2_h8266.json")
         edl = profile.get_mode("edl")
         assert edl is not None
@@ -53,7 +53,7 @@ class TestDeviceProfile:
         assert non is None
 
     def test_get_frp_method(self) -> None:
-        profiles_dir = Path(__file__).resolve().parents[2] / "data" / "devices"
+        profiles_dir = Path(__file__).resolve().parents[2] / "src" / "zenith" / "data" / "devices"
         profile = DeviceProfile.from_json(profiles_dir / "sony_xz2_h8266.json")
         first = profile.frp_methods[0]
         found = profile.get_frp_method(first.id)
@@ -61,13 +61,13 @@ class TestDeviceProfile:
         assert found.name == first.name
 
     def test_get_frp_partitions(self) -> None:
-        profiles_dir = Path(__file__).resolve().parents[2] / "data" / "devices"
+        profiles_dir = Path(__file__).resolve().parents[2] / "src" / "zenith" / "data" / "devices"
         profile = DeviceProfile.from_json(profiles_dir / "sony_xz2_h8266.json")
         frp_parts = profile.get_frp_partitions()
         assert isinstance(frp_parts, list)
 
     def test_nokia_sprd_fields(self) -> None:
-        profiles_dir = Path(__file__).resolve().parents[2] / "data" / "devices"
+        profiles_dir = Path(__file__).resolve().parents[2] / "src" / "zenith" / "data" / "devices"
         profile = DeviceProfile.from_json(profiles_dir / "nokia_c32_ta1534.json")
         assert profile.sprd_chip_family is not None
         assert profile.fdl1_base is not None
@@ -100,10 +100,10 @@ class TestDeviceProfileRegistry:
     def test_match_by_usb_qualcomm_edl(self) -> None:
         reg = DeviceProfileRegistry()
         reg.load_all()
-        # 0x05C6=1478, 0x9008=36872
+        # 0x05C6=1478, 0x9008=36872 — multiple profiles match this (sony, motorola, google, samsung)
         matched = reg.match_by_usb(0x05C6, 0x9008)
         assert matched is not None
-        assert "sony" in matched.id
+        assert matched.soc_vendor == "Qualcomm"
 
     def test_match_by_usb_sprd(self) -> None:
         reg = DeviceProfileRegistry()

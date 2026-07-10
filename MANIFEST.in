@@ -1,0 +1,7 @@
+include README.md
+include CHANGELOG.md
+include LICENSE
+recursive-include src/zenith/data/playbooks *.yaml
+recursive-include src/zenith/data/devices *.json
+include src/zenith/data/DEEP_ATLAS.md
+recursive-include src/zenith *.pyi

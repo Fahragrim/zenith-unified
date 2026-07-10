@@ -68,7 +68,7 @@ class LocalProvider(AIProvider):
         try:
             import httpx
 
-            messages: list[dict] = []
+            messages: list[dict[str, Any]] = []
             if system:
                 messages.append({"role": "system", "content": system})
             messages.append({"role": "user", "content": prompt})

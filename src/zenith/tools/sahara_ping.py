@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import time
+from typing import Any
 
 
-def sahara_ping_scan(max_port: int = 32) -> list[dict]:
+def sahara_ping_scan(max_port: int = 32) -> list[dict[str, Any]]:
     """Scan COM ports for Qualcomm EDL devices using Sahara Hello packet."""
-    results: list[dict] = []
+    results: list[dict[str, Any]] = []
     try:
         import serial
     except ImportError:

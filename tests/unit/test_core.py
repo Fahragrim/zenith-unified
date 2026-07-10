@@ -426,7 +426,9 @@ class TestBackupManager:
 
 
 class TestDiscovery:
-    def test_run_discovery_empty(self) -> None:
+    def test_run_discovery_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("zenith.core.discovery.scan_serial_ports", lambda: [])
+        monkeypatch.setattr("zenith.core.discovery.scan_usb_pyusb", lambda: [])
         result = run_discovery(adb_devices=[], fastboot_devices=[])
         assert result.primary_mode == ConnectionMode.UNKNOWN
 

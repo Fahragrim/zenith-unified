@@ -1,0 +1,197 @@
+{
+  "id": "xiaomi_redmi_note_12_4g",
+  "manufacturer": "Xiaomi",
+  "model": "Redmi Note 12 4G",
+  "codename": "topaz",
+  "soc_vendor": "MediaTek",
+  "soc_name": "Helio G85 (MT6769Z)",
+  "android_version": "Android 12-13",
+  "storage_type": "eMMC 5.1",
+  "bootloader_locked": true,
+  "metadata": {
+    "boot_chain": "BROM -> Preloader -> U-Boot -> Linux Kernel",
+    "brom_usb_vid": "0x0E8D",
+    "brom_usb_pid": "0x2000",
+    "preloader_name": "preloader_topaz.bin",
+    "da_name": "MT6769_DA.bin",
+    "auth_bypass_required": true,
+    "frp_location": "persist partition (sector 8192)",
+    "sector_size": 512,
+    "slot_count": 2
+  },
+  "modes": [
+    {
+      "name": "brom",
+      "display_name": "MediaTek BROM (Preloader / USB Download)",
+      "usb_ids": [{"vid": 3725, "pid": 8192}],
+      "port_description_patterns": ["MediaTek", "MTK", "Preloader", "DA", "0E8D:2000"],
+      "entry_methods": [
+        "Volym Ner + Power vid uppstart (håll tills ansluten)",
+        "Test point på moderkort (kortslut CLK till GND)"
+      ],
+      "exit_methods": ["Power hold 10s", "mtk reset"],
+      "tools": ["mtkclient", "SP Flash Tool", "SP MDT"],
+      "description": "MediaTek BROM-lage via preloader. VID 0x0E8D, PID 0x2000. Kräver auth bypass (payload) för full DA-access."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot / Bootloader",
+      "usb_ids": [{"vid": 3725, "pid": 26665}],
+      "port_description_patterns": ["fastboot", "Xiaomi"],
+      "entry_methods": [
+        "adb reboot bootloader",
+        "Volym Ner + Power vid uppstart"
+      ],
+      "exit_methods": ["fastboot reboot", "Power hold 10s"],
+      "tools": ["fastboot", "Xiaomi Flash Tool"],
+      "description": "Standard fastboot. Xiaomi Redmi har låst bootloader — kräver Mi Unlock Status för upplåsning."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB (USB Debugging)",
+      "usb_ids": [],
+      "port_description_patterns": ["ADB", "Android", "Xiaomi"],
+      "entry_methods": ["Enable USB debugging in Developer Options"],
+      "exit_methods": ["adb disconnect"],
+      "tools": ["adb", "scrcpy"],
+      "description": "Standard ADB mode with USB debugging."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery Mode",
+      "usb_ids": [],
+      "port_description_patterns": ["recovery"],
+      "entry_methods": [
+        "adb reboot recovery",
+        "Volym Upp + Power vid uppstart"
+      ],
+      "exit_methods": ["Reboot system now"],
+      "tools": ["adb"],
+      "description": "Stock Recovery med ADB sideload."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "mtk_brom_frp_erase",
+      "name": "MTK BROM FRP Erase (auth bypass + persist wipe)",
+      "category": "BROM",
+      "success_rate": 0.90,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "mtkclient installerat",
+        "MediaTek VCOM-drivrutin",
+        "Enhet i BROM-läge (preloader)"
+      ],
+      "steps": [
+        {"step": 1, "description": "Tvinga BROM: Volym Ner + Power vid USB-anslutning"},
+        {"step": 2, "description": "Verifiera: Enhetshanteraren visar 'MediaTek Preloader'"},
+        {"step": 3, "description": "Kör: mtk payload (auth bypass)"},
+        {"step": 4, "description": "Kör: mtk e persist"},
+        {"step": 5, "description": "Starta om: mtk reset"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": [
+        "mtk payload",
+        "mtk e persist",
+        "mtk reset"
+      ]
+    },
+    {
+      "id": "xiaomi_mi_account_remove",
+      "name": "Xiaomi Mi Account Removal via EDL",
+      "category": "BROM",
+      "success_rate": 0.80,
+      "risk_level": "HIGH",
+      "prerequisites": [
+        "Authorized Mi Account",
+        "BROM access via test point"
+      ],
+      "steps": [
+        {"step": 1, "description": "Enter BROM mode via test points"},
+        {"step": 2, "description": "Bypass auth: mtk payload"},
+        {"step": 3, "description": "Read persist: mtk r persist persist.img"},
+        {"step": 4, "description": "Modify persist to clear FRP flags"},
+        {"step": 5, "description": "Write back: mtk w persist persist_modified.img"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": [
+        "mtk payload",
+        "mtk r persist persist.img",
+        "mtk w persist persist_modified.img"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "xiaomi_official",
+      "name": "Xiaomi Mi Unlock (official)",
+      "success_rate": 0.95,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Mi Account (logged in for 30+ days)",
+        "Mi Unlock Status: YES",
+        "Xiaomi Flash Unlock Tool"
+      ],
+      "steps": [
+        {"step": 1, "description": "Bind account: Settings -> Developer Options -> Mi Unlock Status"},
+        {"step": 2, "description": "Wait 7-30 days (enforcement varies)"},
+        {"step": 3, "description": "Download Mi Unlock Tool from en.miui.com"},
+        {"step": 4, "description": "Boot to fastboot: Vol Down + Power"},
+        {"step": 5, "description": "Run Mi Unlock Tool -> Sign in -> Unlock"},
+        {"step": 6, "description": "WARNING: Data wiped on unlock"}
+      ],
+      "commands": ["fastboot oem device-info"],
+      "guide_file": null,
+      "official": true
+    }
+  ],
+  "firehoses": [],
+  "test_points": [
+    {
+      "label": "BROM Test Point",
+      "location": "Under EMI shield near SoC (right side)",
+      "coordinates": null,
+      "notes": "Kortslut CLK-pin till GND medan USB ansluts. Exakt position: XDA 'topaz edl test point'."
+    }
+  ],
+  "partitions": [
+    {"name": "persist", "purpose": "Persistent data (FRP location)", "frp_relevant": true, "backup_before_write": true},
+    {"name": "userdata", "purpose": "User data partition", "frp_relevant": true, "backup_before_write": true},
+    {"name": "frp", "purpose": "Factory Reset Protection", "frp_relevant": true, "backup_before_write": true},
+    {"name": "boot", "purpose": "Kernel + ramdisk", "frp_relevant": false, "backup_before_write": true},
+    {"name": "system", "purpose": "Android OS (dynamic)", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vendor", "purpose": "Vendor modules", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta", "purpose": "Verified Boot metadata", "frp_relevant": false, "backup_before_write": true},
+    {"name": "preloader", "purpose": "MediaTek Preloader", "frp_relevant": false, "backup_before_write": true},
+    {"name": "nvram", "purpose": "NVRAM / IMEI data", "frp_relevant": false, "backup_before_write": true},
+    {"name": "protect1", "purpose": "Protected partition 1", "frp_relevant": false, "backup_before_write": true},
+    {"name": "protect2", "purpose": "Protected partition 2", "frp_relevant": false, "backup_before_write": true},
+    {"name": "secro", "purpose": "Secure ROM data", "frp_relevant": false, "backup_before_write": true}
+  ],
+  "at_commands": [
+    {"command": "AT+CFUN=1,1", "description": "Full modem reset", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+EGMR=0,7", "description": "Read IMEI slot 1", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CPIN?", "description": "SIM lock status", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+COPS?", "description": "Network operator", "modifies_nvram": false, "risk_level": "LOW"}
+  ],
+  "service_codes": [
+    {"code": "*#06#", "function": "IMEI display"},
+    {"code": "*#*#6484#*#*", "function": "Hardware Test (CIT mode)"},
+    {"code": "*#*#4636#*#*", "function": "Phone Information"},
+    {"code": "*#*#759#*#*", "function": "RLZ Debug"},
+    {"code": "*#*#2663#*#*", "function": "Touch version"},
+    {"code": "*#*#0589#*#*", "function": "Light sensor test"},
+    {"code": "*#*#232338#*#*", "function": "WiFi MAC address"}
+  ],
+  "talkback_shortcuts": {}
+}

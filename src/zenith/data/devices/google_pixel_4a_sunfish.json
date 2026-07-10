@@ -1,0 +1,191 @@
+{
+  "id": "google_pixel_4a",
+  "manufacturer": "Google",
+  "model": "Pixel 4a",
+  "codename": "sunfish",
+  "soc_vendor": "Qualcomm",
+  "soc_name": "Snapdragon 730G (SM7150)",
+  "android_version": "Android 10-13",
+  "bootloader_locked": true,
+  "storage_type": "UFS 2.1",
+  "modes": [
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot",
+      "usb_ids": [
+        {
+          "vid": 6353,
+          "pid": 20192
+        }
+      ],
+      "port_description_patterns": [
+        "fastboot",
+        "Google"
+      ],
+      "entry_methods": [
+        "adb reboot bootloader"
+      ],
+      "exit_methods": [
+        "fastboot reboot"
+      ],
+      "tools": [
+        "fastboot"
+      ],
+      "description": "Fastboot."
+    },
+    {
+      "name": "edl",
+      "display_name": "EDL 9008",
+      "usb_ids": [
+        {
+          "vid": 6353,
+          "pid": 36752
+        }
+      ],
+      "port_description_patterns": [
+        "9008",
+        "QDLoader"
+      ],
+      "entry_methods": [
+        "adb reboot edl",
+        "EDL cable"
+      ],
+      "exit_methods": [
+        "Power hold 10s"
+      ],
+      "tools": [
+        "edl",
+        "QFIL"
+      ],
+      "description": "Qualcomm EDL."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB",
+      "usb_ids": [
+        {
+          "vid": 6353,
+          "pid": 3328
+        }
+      ],
+      "port_description_patterns": [
+        "ADB",
+        "Google"
+      ],
+      "entry_methods": [
+        "Enable USB debugging"
+      ],
+      "exit_methods": [
+        "adb disconnect"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "ADB."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "recovery"
+      ],
+      "entry_methods": [
+        "adb reboot recovery"
+      ],
+      "exit_methods": [
+        "Reboot system now"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "Stock recovery."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "fastboot_erase_frp",
+      "name": "Fastboot Erase FRP",
+      "category": "Fastboot",
+      "success_rate": 0.95,
+      "risk_level": "LOW",
+      "prerequisites": [
+        "Unlocked bootloader"
+      ],
+      "steps": [],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "commands": [
+        "fastboot:erase frp",
+        "fastboot:reboot"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "google_official",
+      "name": "Google Official Unlock",
+      "success_rate": 1.0,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "OEM Unlock enabled"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "description": "fastboot flashing unlock"
+        }
+      ],
+      "commands": [
+        "fastboot:flashing unlock"
+      ],
+      "official": true
+    }
+  ],
+  "partitions": [
+    {
+      "name": "frp",
+      "purpose": "FRP",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "userdata",
+      "purpose": "Data",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "boot",
+      "purpose": "Kernel",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "system",
+      "purpose": "System",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "vendor",
+      "purpose": "Vendor",
+      "frp_relevant": false,
+      "backup_before_write": true
+    }
+  ],
+  "service_codes": [
+    {
+      "code": "*#06#",
+      "function": "IMEI"
+    },
+    {
+      "code": "*#*#4636#*#*",
+      "function": "Phone info"
+    }
+  ],
+  "talkback_shortcuts": {}
+}

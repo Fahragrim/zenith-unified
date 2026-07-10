@@ -1,0 +1,202 @@
+{
+  "id": "oneplus_nord_2",
+  "manufacturer": "OnePlus",
+  "model": "Nord 2 DN2103",
+  "codename": "denniz",
+  "soc_vendor": "MediaTek",
+  "soc_name": "Dimensity 1200 (MT6893)",
+  "android_version": "Android 11-13",
+  "bootloader_locked": true,
+  "storage_type": "UFS 3.1",
+  "modes": [
+    {
+      "name": "brom",
+      "display_name": "MediaTek BROM",
+      "usb_ids": [
+        {
+          "vid": 3725,
+          "pid": 8192
+        }
+      ],
+      "port_description_patterns": [
+        "MediaTek",
+        "MTK",
+        "Preloader"
+      ],
+      "entry_methods": [
+        "Volym Ner + Power",
+        "Test point"
+      ],
+      "exit_methods": [
+        "Power hold 10s"
+      ],
+      "tools": [
+        "mtkclient",
+        "SP Flash Tool"
+      ],
+      "description": "MediaTek BROM med preloader."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot",
+      "usb_ids": [
+        {
+          "vid": 3725,
+          "pid": 26665
+        }
+      ],
+      "port_description_patterns": [
+        "fastboot",
+        "OnePlus"
+      ],
+      "entry_methods": [
+        "adb reboot bootloader"
+      ],
+      "exit_methods": [
+        "fastboot reboot"
+      ],
+      "tools": [
+        "fastboot"
+      ],
+      "description": "Fastboot."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "ADB"
+      ],
+      "entry_methods": [
+        "Enable USB debugging"
+      ],
+      "exit_methods": [
+        "adb disconnect"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "ADB."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "recovery"
+      ],
+      "entry_methods": [
+        "adb reboot recovery"
+      ],
+      "exit_methods": [
+        "Reboot system now"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "Stock recovery."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "mtk_brom_frp",
+      "name": "MTK BROM FRP Erase",
+      "category": "BROM",
+      "success_rate": 0.85,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "BROM mode",
+        "mtkclient"
+      ],
+      "steps": [],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "commands": [
+        "mtk payload",
+        "mtk e persist",
+        "mtk reset"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "oneplus_official",
+      "name": "OnePlus Official Unlock",
+      "success_rate": 1.0,
+      "risk_level": "MEDIUM",
+      "prerequisites": [],
+      "steps": [
+        {
+          "step": 1,
+          "description": "fastboot flashing unlock"
+        }
+      ],
+      "commands": [
+        "fastboot:flashing unlock"
+      ],
+      "official": true
+    }
+  ],
+  "partitions": [
+    {
+      "name": "frp",
+      "purpose": "FRP",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "persist",
+      "purpose": "Persist",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "userdata",
+      "purpose": "Data",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "boot",
+      "purpose": "Kernel",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "super",
+      "purpose": "Dynamic",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "preloader",
+      "purpose": "Preloader",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "nvram",
+      "purpose": "NVRAM",
+      "frp_relevant": false,
+      "backup_before_write": true
+    }
+  ],
+  "service_codes": [
+    {
+      "code": "*#06#",
+      "function": "IMEI"
+    },
+    {
+      "code": "*#808#",
+      "function": "OnePlus engineering"
+    },
+    {
+      "code": "*#*#4636#*#*",
+      "function": "Phone info"
+    }
+  ],
+  "talkback_shortcuts": {}
+}

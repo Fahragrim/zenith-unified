@@ -1,17 +1,21 @@
 """Playbook Executor — executes YAML repair playbooks step-by-step.
 
 Command prefix routing: adb:, adb_shell:, fastboot:, shell:, edl:, newflasher:.
-NO shell=True — all subprocess calls use list-based arguments for security.
+Dispatches to AdapterRegistry for adb/fastboot/edl/brom; falls back to subprocess.
 """
 
 from __future__ import annotations
 
 import shutil
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
 from loguru import logger
+
+PlaybookConfirmFn = Callable[[str], bool]
+"""Callback(playbook_title) -> True to proceed, False to abort."""
 
 
 @dataclass
@@ -43,17 +47,32 @@ class PlaybookRunResult:
 
 
 class PlaybookExecutor:
-    """Executes playbooks. NO shell=True. Uses list-based subprocess."""
+    """Executes playbooks. Uses AdapterRegistry dispatch; falls back to subprocess."""
 
-    def __init__(self) -> None:
+    def __init__(self, registry: Any = None) -> None:
         self.dry_run = False
+        self._registry = registry
 
-    def execute(self, playbook: dict[str, Any], device_serial: str = "") -> PlaybookRunResult:
+    def _get_registry(self) -> Any:
+        if self._registry is None:
+            from zenith.adapters.registry import get_adapter_registry
+            self._registry = get_adapter_registry()
+        return self._registry
+
+    def execute(self, playbook: dict[str, Any], device_serial: str = "",
+                confirm_critical: PlaybookConfirmFn | None = None) -> PlaybookRunResult:
         title = playbook.get("title", "Unknown")
         pb_id = playbook.get("id", "unknown")
         steps = playbook.get("steps", [])
+        risk_level = playbook.get("risk_level", "")
         result = PlaybookRunResult(playbook_id=pb_id, title=title, total_steps=len(steps))
-        logger.info(f"Executing: {title} ({len(steps)} steps)")
+
+        if risk_level == "critical" and confirm_critical is not None and not confirm_critical(title):
+            logger.warning(f"Playbook aborted by user: {title}")
+            return PlaybookRunResult(playbook_id=pb_id, title=title, success=False,
+                                     error="Aborted by user — safety confirmation declined")
+
+        logger.info(f"Executing: {title} ({len(steps)} steps, risk={risk_level})")
 
         for idx, step in enumerate(steps):
             step_num = step.get("step_number", step.get("step", idx + 1))
@@ -98,6 +117,19 @@ class PlaybookExecutor:
         if self.dry_run:
             return True, f"[dry-run] {command}"
 
+        # Try AdapterRegistry dispatch first
+        registry = self._get_registry()
+        prefix = command.split(":")[0] if ":" in command else ""
+        adapter_prefixes = {"adb", "adb_shell", "fastboot", "edl", "brom"}
+
+        if prefix in adapter_prefixes:
+            try:
+                ok, out = registry.dispatch(command, serial)
+                return ok, out
+            except Exception:
+                pass
+
+        # Fallback to subprocess
         try:
             if command.startswith("adb_shell:"):
                 cmd_str = command[len("adb_shell:"):].strip()

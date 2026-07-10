@@ -29,13 +29,41 @@ def main(verbose: bool = False) -> None:
 
 
 @main.command()
-def discover() -> None:
+@click.option("--color/--no-color", default=True, help="Color-coded output.")
+def discover(color: bool = True) -> None:
     """Discover connected devices across ADB, Fastboot, USB, and serial."""
     try:
         from zenith.core.discovery import run_discovery
-        click.echo(run_discovery().to_display_text())
+        result = run_discovery()
+        for line in result.summary_lines:
+            if not line:
+                click.echo()
+            elif line.startswith("[ADB]") and color:
+                click.echo(click.style(line, fg="green", bold=True))
+            elif line.startswith("[FASTBOOT]") and color:
+                click.echo(click.style(line, fg="cyan", bold=True))
+            elif line.startswith("[USB") and color:
+                click.echo(click.style(line, fg="yellow", bold=True))
+            elif line.startswith("[SERIAL]") and color:
+                click.echo(click.style(line, fg="magenta", bold=True))
+            elif line.startswith("[MATCHED") and color:
+                click.echo(click.style(line, fg="blue", bold=True))
+            elif line.startswith("[PRIMARY") and color:
+                click.echo(click.style(line, fg="green", bold=True))
+            elif line.startswith("[SUGGESTED") and color:
+                click.echo(click.style(line, fg="bright_green"))
+            elif line.startswith("=== ") and color:
+                click.echo(click.style(line, fg="white", bold=True))
+            elif line.startswith("No supported") and color:
+                click.echo(click.style(line, fg="red"))
+            elif line.startswith("  -> ") and color:
+                click.echo(click.style(line, fg="bright_black"))
+            elif line.startswith("  [") and color:
+                click.echo(click.style(line, fg="bright_blue"))
+            else:
+                click.echo(line)
     except Exception as e:
-        click.echo(f"Error: {e}", err=True)
+        click.echo(f"Discovery error: {e}", err=True)
         sys.exit(1)
 
 
@@ -90,7 +118,8 @@ def playbooks(soc: str | None = None, symptom: str | None = None) -> None:
 @click.argument("playbook_id")
 @click.option("--serial", type=str, help="Device serial for ADB/Fastboot targeting.")
 @click.option("--dry-run", is_flag=True, help="Simulate without executing commands.")
-def repair(playbook_id: str, serial: str | None = None, dry_run: bool = False) -> None:
+@click.option("--yes", "-y", is_flag=True, help="Skip safety confirmation for destructive playbooks.")
+def repair(playbook_id: str, serial: str | None = None, dry_run: bool = False, yes: bool = False) -> None:
     """Execute a repair playbook."""
     try:
         from zenith.engines.playbook_executor import PlaybookExecutor
@@ -106,10 +135,25 @@ def repair(playbook_id: str, serial: str | None = None, dry_run: bool = False) -
         pbd = {"id": pb.id, "title": pb.title, "symptom": pb.symptom, "steps": pb.steps, "risk_level": pb.risk_level}
         executor = PlaybookExecutor()
         executor.dry_run = dry_run
+
+        if not yes:
+            def _confirm(title: str) -> bool:
+                click.echo()
+                click.echo("⚠ This action requires safety confirmation.")
+                click.echo(f"  Playbook: {title}")
+                click.echo("  This may permanently brick the device, wipe all data, or void warranty.")
+                return click.confirm("  Proceed?", default=False)
+            confirm_cb = _confirm
+        else:
+            confirm_cb = None
+
         click.echo(f"Executing: {pb.title} (risk: {pb.risk_level})")
         if dry_run:
             click.echo("*** DRY RUN MODE — no commands will be executed ***")
-        result = executor.execute(pbd, serial or "")
+        result = executor.execute(pbd, serial or "", confirm_critical=confirm_cb)
+        if not result.success and result.error == "Aborted by user — safety confirmation declined":
+            click.echo(f"\n{result.error}")
+            return
         status = "SUCCESS" if result.success else "FAILED"
         click.echo(f"\nResult: {status} ({result.steps_completed}/{result.total_steps} steps)")
         for r in result.results:
@@ -397,6 +441,106 @@ def gui() -> None:
 def version() -> None:
     """Show version information."""
     click.echo(f"Zenith Unified v{__version__}")
+
+
+@main.command()
+@click.option("--profile", type=str, help="Device profile ID (e.g. sony_xz2_h8266)")
+@click.option("--method", type=str, help="FRP method ID (e.g. edl_youkiloon)")
+@click.option("--serial", type=str, help="Device serial for ADB targeting.")
+@click.option("--dry-run", is_flag=True, help="Simulate without executing.")
+@click.option("--list", "list_only", is_flag=True, help="List available FRP methods and exit.")
+def frp_bypass(profile: str | None = None, method: str | None = None,
+               serial: str | None = None, dry_run: bool = False,
+               list_only: bool = False) -> None:
+    """Bypass Factory Reset Protection (FRP) on a device.
+
+    Uses EDL/BROM/ADB adapters via AdapterRegistry dispatch.
+    If --profile is given, loads that profile's FRP methods.
+    If --method is given, executes that specific method.
+    """
+    from zenith.adapters.registry import get_adapter_registry
+    from zenith.knowledge.device_registry import get_device_profile_registry
+
+    reg = get_device_profile_registry()
+
+    if list_only or not method:
+        all_profiles = reg.list_all()
+        click.echo(f"{len(all_profiles)} device profiles with FRP methods:\n")
+        for p in all_profiles:
+            if p.frp_methods:
+                click.echo(f"  {p.id:30s} ({len(p.frp_methods)} methods)")
+                for m in p.frp_methods[:3]:
+                    click.echo(f"    {m.id:25s} {m.name[:55]}")
+                if len(p.frp_methods) > 3:
+                    click.echo(f"    ... and {len(p.frp_methods) - 3} more")
+                click.echo()
+        if list_only:
+            return
+
+    if not profile:
+        click.echo("Use --profile <id> to select a device profile, or --list to see all.")
+        return
+
+    matched = [p for p in reg.list_all() if p.id == profile]
+    if not matched:
+        click.echo(f"Profile not found: {profile}")
+        return
+
+    prof = matched[0]
+    available = prof.frp_methods or []
+
+    if method:
+        m = next((m for m in available if m.id == method), None)
+        if m is None:
+            click.echo(f"FRP method '{method}' not found in profile {profile}")
+            return
+        methods_to_run = [m]
+    else:
+        if not available:
+            click.echo(f"No FRP methods for {profile}")
+            return
+        methods_to_run = available
+
+    adapter_reg = get_adapter_registry()
+    for m in methods_to_run:
+        click.echo(f"\n--- {m.name} ---")
+        click.echo(f"  Risk: {m.risk_level}  |  Success rate: {m.success_rate or 'N/A'}")
+        if m.prerequisites:
+            click.echo(f"  Prerequisites: {', '.join(m.prerequisites)}")
+
+        commands = m.commands or (getattr(m, 'steps', None) and
+                                  [s.get('command', '') for s in m.steps if s.get('command')]) or []
+        if not commands:
+            click.echo("  [No automated commands — manual procedure required]")
+            continue
+
+        click.echo(f"  Running {len(commands)} command(s):")
+        for i, cmd in enumerate(commands, 1):
+            if not cmd:
+                continue
+            click.echo(f"    [{i}] {cmd}")
+            if dry_run:
+                click.echo("         [DRY-RUN — skipped]")
+                continue
+            try:
+                ok, out = adapter_reg.dispatch(cmd, serial or "")
+                if ok:
+                    click.echo(f"         OK: {out[:120]}")
+                else:
+                    click.echo(f"         FAIL: {out[:120]}")
+                    click.echo(f"  FRP bypass FAILED at step {i}")
+                    return
+            except Exception as e:
+                click.echo(f"         ERROR: {e}")
+                return
+        click.echo(f"  FRP bypass completed ({len(commands)} steps)")
+
+
+@main.command()
+def dashboard() -> None:
+    """Live device monitoring dashboard."""
+    from zenith.cli.dashboard import Dashboard
+    Dashboard().run()
 
 
 if __name__ == "__main__":

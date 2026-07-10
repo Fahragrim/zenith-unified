@@ -1,0 +1,260 @@
+{
+  "id": "xiaomi_mi_11",
+  "manufacturer": "Xiaomi",
+  "model": "Mi 11",
+  "codename": "venus",
+  "soc_vendor": "Qualcomm",
+  "soc_name": "Snapdragon 888 (SM8350)",
+  "android_version": "Android 11-13",
+  "bootloader_locked": true,
+  "storage_type": "UFS 3.1",
+  "modes": [
+    {
+      "name": "edl",
+      "display_name": "EDL 9008",
+      "usb_ids": [
+        {
+          "vid": 1478,
+          "pid": 36872
+        }
+      ],
+      "port_description_patterns": [
+        "9008",
+        "QDLoader"
+      ],
+      "entry_methods": [
+        "fastboot oem edl",
+        "EDL cable"
+      ],
+      "exit_methods": [
+        "Power hold 10s"
+      ],
+      "tools": [
+        "edl",
+        "QFIL"
+      ],
+      "description": "Qualcomm EDL"
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot",
+      "usb_ids": [
+        {
+          "vid": 1478,
+          "pid": 18586
+        }
+      ],
+      "port_description_patterns": [
+        "fastboot",
+        "Xiaomi"
+      ],
+      "entry_methods": [
+        "adb reboot bootloader",
+        "Volym Ner + Power"
+      ],
+      "exit_methods": [
+        "fastboot reboot"
+      ],
+      "tools": [
+        "fastboot"
+      ],
+      "description": "Standard fastboot."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "ADB"
+      ],
+      "entry_methods": [
+        "Enable USB debugging"
+      ],
+      "exit_methods": [
+        "adb disconnect"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "ADB mode."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "recovery"
+      ],
+      "entry_methods": [
+        "adb reboot recovery"
+      ],
+      "exit_methods": [
+        "Reboot system now"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "Stock recovery."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "edl_frp_erase",
+      "name": "EDL FRP Erase",
+      "category": "EDL",
+      "success_rate": 0.9,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "EDL mode",
+        "SM8350 firehose"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "description": "edl e frp"
+        },
+        {
+          "step": 2,
+          "description": "edl reset"
+        }
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Free",
+      "commands": [
+        "edl:e --partition=frp",
+        "edl:reset"
+      ]
+    },
+    {
+      "id": "fastboot_erase_frp",
+      "name": "Fastboot Erase FRP",
+      "category": "Fastboot",
+      "success_rate": 0.95,
+      "risk_level": "LOW",
+      "prerequisites": [
+        "Unlocked bootloader"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "description": "fastboot erase frp"
+        },
+        {
+          "step": 2,
+          "description": "fastboot reboot"
+        }
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "commands": [
+        "fastboot:erase frp",
+        "fastboot:reboot"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "xiaomi_official",
+      "name": "Xiaomi Mi Unlock",
+      "success_rate": 0.95,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Mi Account 30+ days"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "description": "Bind Mi Account"
+        },
+        {
+          "step": 2,
+          "description": "fastboot oem unlock"
+        }
+      ],
+      "commands": [
+        "fastboot:oem device-info"
+      ],
+      "official": true
+    }
+  ],
+  "partitions": [
+    {
+      "name": "frp",
+      "purpose": "FRP",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "userdata",
+      "purpose": "User data",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "boot",
+      "purpose": "Kernel",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "system",
+      "purpose": "System",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "vendor",
+      "purpose": "Vendor",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "vbmeta",
+      "purpose": "Verified Boot",
+      "frp_relevant": false,
+      "backup_before_write": true
+    }
+  ],
+  "firehoses": [
+    {
+      "filename": "prog_firehose_ddr_SM8350.mbn",
+      "priority": 1,
+      "notes": "Snapdragon 888"
+    }
+  ],
+  "at_commands": [
+    {
+      "command": "AT+CFUN=1,1",
+      "description": "Modem reset",
+      "modifies_nvram": false,
+      "risk_level": "LOW"
+    },
+    {
+      "command": "AT+EGMR=0,7",
+      "description": "Read IMEI",
+      "modifies_nvram": false,
+      "risk_level": "LOW"
+    }
+  ],
+  "service_codes": [
+    {
+      "code": "*#06#",
+      "function": "IMEI"
+    },
+    {
+      "code": "*#*#6484#*#*",
+      "function": "CIT test"
+    },
+    {
+      "code": "*#*#4636#*#*",
+      "function": "Phone info"
+    }
+  ],
+  "talkback_shortcuts": {}
+}

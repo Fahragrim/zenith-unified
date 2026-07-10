@@ -1,65 +1,46 @@
-"""Repair tab — playbook selection and execution."""
+"""Repair tab — interactive step-by-step playbook execution.
+
+Uses StepByStepExecutor for per-step control with pause/skip/fallback.
+AdapterRegistry dispatch for ADB/Fastboot/EDL/BROM commands.
+"""
 
 from __future__ import annotations
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QListWidget,
     QPushButton,
+    QSplitter,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
-
-class _PlaybookWorker(QThread):
-    finished = Signal(dict)
-
-    def __init__(self, playbook_id: str, serial: str) -> None:
-        super().__init__()
-        self._id = playbook_id
-        self._serial = serial
-
-    def run(self) -> None:
-        try:
-            from zenith.engines.playbook_executor import PlaybookExecutor
-            from zenith.knowledge.knowledge_base import get_knowledge_base
-            kb = get_knowledge_base()
-            pb = kb.get_playbook(self._id)
-            if pb is None:
-                self.finished.emit({"error": f"Playbook not found: {self._id}"})
-                return
-            pbd = {"id": pb.id, "title": pb.title, "symptom": pb.symptom, "steps": pb.steps, "risk_level": pb.risk_level}
-            executor = PlaybookExecutor()
-            result = executor.execute(pbd, self._serial)
-            self.finished.emit(result.to_dict())
-        except Exception as e:
-            self.finished.emit({"error": str(e)})
+from zenith.gui.pyside6.widgets.log_widgets import LogConsole, StepByStepExecutor
 
 
 class RepairTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self._setup()
-        self._worker: _PlaybookWorker | None = None
 
     def _setup(self) -> None:
         layout = QVBoxLayout(self)
         layout.setSpacing(8)
         layout.addWidget(QLabel("Repair Playbooks", objectName="title"))
 
-        # Playbook selector
+        # Top bar: playbook selector + serial
         grp = QGroupBox("Select Playbook")
         gl = QVBoxLayout(grp)
         row = QHBoxLayout()
         row.addWidget(QLabel("Playbook:"))
         self.playbook_combo = QComboBox()
         self.playbook_combo.setMinimumWidth(300)
+        self.playbook_combo.currentIndexChanged.connect(self._preview)
         row.addWidget(self.playbook_combo, 1)
         row.addStretch()
         gl.addLayout(row)
@@ -68,27 +49,33 @@ class RepairTab(QWidget):
         self.serial_input = QLineEdit()
         self.serial_input.setPlaceholderText("Optional")
         row2.addWidget(self.serial_input)
+        self.load_btn = QPushButton("Load Playbook")
+        self.load_btn.clicked.connect(self._load_selected)
+        row2.addWidget(self.load_btn)
         gl.addLayout(row2)
-        self.exec_btn = QPushButton("Execute Playbook")
-        self.exec_btn.clicked.connect(self._execute)
-        gl.addWidget(self.exec_btn)
         layout.addWidget(grp)
 
-        # Steps preview
-        grp2 = QGroupBox("Playbook Steps")
-        gl2 = QVBoxLayout(grp2)
-        self.steps_list = QListWidget()
-        self.steps_list.setMaximumHeight(150)
-        gl2.addWidget(self.steps_list)
-        layout.addWidget(grp2)
+        # Splitter: executor (top) + log (bottom)
+        splitter = QSplitter()
+        splitter.setOrientation(Qt.Vertical)
 
-        # Results
-        grp3 = QGroupBox("Execution Results")
-        gl3 = QVBoxLayout(grp3)
+        # Interactive step-by-step executor
+        self.executor = StepByStepExecutor()
+        self.executor.playbook_finished.connect(self._on_finished)
+        splitter.addWidget(self.executor)
+
+        # Console log
+        self.log = LogConsole()
+        splitter.addWidget(self.log)
+        splitter.setSizes([400, 150])
+
+        layout.addWidget(splitter, 1)
+
+        # Results area
         self.result_text = QTextEdit()
         self.result_text.setReadOnly(True)
-        gl3.addWidget(self.result_text)
-        layout.addWidget(grp3, 1)
+        self.result_text.setMaximumHeight(120)
+        layout.addWidget(self.result_text)
 
         self._load_playbooks()
 
@@ -102,10 +89,8 @@ class RepairTab(QWidget):
         except Exception as e:
             self.playbook_combo.addItem(f"Error: {e}")
 
-        self.playbook_combo.currentIndexChanged.connect(self._preview)
-
     def _preview(self) -> None:
-        self.steps_list.clear()
+        """Show steps preview when playbook is selected."""
         pid = self.playbook_combo.currentData()
         if not pid:
             return
@@ -114,34 +99,38 @@ class RepairTab(QWidget):
             kb = get_knowledge_base()
             pb = kb.get_playbook(pid)
             if pb:
-                for s in pb.steps:
-                    desc = s.get("description", s.get("desc", ""))
-                    cmd = s.get("command", "")
-                    if cmd:
-                        self.steps_list.addItem(f"{desc}  →  {cmd}")
-                    else:
-                        self.steps_list.addItem(desc)
+                self.log.append(f"Playbook loaded: {pb.title} ({len(pb.steps)} steps)")
         except Exception:
             pass
 
-    def _execute(self) -> None:
+    def _load_selected(self) -> None:
         pid = self.playbook_combo.currentData()
         if not pid:
-            self.result_text.setText("Select a playbook first.")
+            self.log.append("No playbook selected", "WARNING")
             return
         serial = self.serial_input.text().strip()
-        self.exec_btn.setEnabled(False)
-        self.exec_btn.setText("Executing...")
-        self.result_text.setText("Running...")
-        self._worker = _PlaybookWorker(pid, serial)
-        self._worker.finished.connect(self._on_finished)
-        self._worker.start()
+        try:
+            from zenith.knowledge.knowledge_base import get_knowledge_base
+            kb = get_knowledge_base()
+            pb = kb.get_playbook(pid)
+            if pb is None:
+                self.log.append(f"Playbook not found: {pid}", "ERROR")
+                return
+            steps = pb.steps if hasattr(pb, 'steps') else []
+            risk_level = getattr(pb, 'risk_level', '')
+            if not steps:
+                self.log.append("Playbook has no steps", "WARNING")
+                return
+            self.executor.load_playbook(pid, steps, serial, risk_level=risk_level)
+            self.log.append(f"Loaded: {pb.title} ({len(steps)} steps, risk={risk_level})")
+            self.result_text.clear()
+        except Exception as e:
+            self.log.append(f"Error loading playbook: {e}", "ERROR")
 
     def _on_finished(self, data: dict) -> None:
-        self.exec_btn.setEnabled(True)
-        self.exec_btn.setText("Execute Playbook")
-        if "error" in data:
-            self.result_text.setText(f"Error: {data['error']}")
-            return
         import json
         self.result_text.setText(json.dumps(data, indent=2, ensure_ascii=False))
+        status = "PASSED" if data.get("success") else "FAILED"
+        self.log.append(f"Playbook {data.get('playbook_id', '?')}: {status} "
+                        f"({data.get('steps_completed', 0)}/{data.get('total_steps', 0)})",
+                        "INFO" if data.get("success") else "ERROR")

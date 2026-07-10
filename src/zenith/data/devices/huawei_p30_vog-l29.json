@@ -1,0 +1,167 @@
+{
+  "id": "huawei_p30",
+  "manufacturer": "Huawei",
+  "model": "P30",
+  "codename": "VOG-L29",
+  "soc_vendor": "HiSilicon",
+  "soc_name": "Kirin 980 (Kirin 980)",
+  "android_version": "Android 9-12",
+  "storage_type": "UFS 2.1",
+  "bootloader_locked": true,
+  "metadata": {
+    "boot_chain": "PBL -> XBL -> ABL -> Linux Kernel",
+    "hisilicon_bootrom": "HiSilicon BootROM via USB 3.1",
+    "edl_support": "No standard Qualcomm EDL — uses HiSilicon USB download mode",
+    "frp_location": "persist + oeminfo partitions",
+    "sector_size": 4096,
+    "slot_count": 2,
+    "usb_vid": "0x12D1"
+  },
+  "modes": [
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot / Bootloader",
+      "usb_ids": [{"vid": 4817, "pid": 21872}],
+      "port_description_patterns": ["fastboot", "Huawei", "HiSilicon"],
+      "entry_methods": ["adb reboot bootloader", "Volym Ner + Power vid uppstart"],
+      "exit_methods": ["fastboot reboot", "Power hold 10s"],
+      "tools": ["fastboot", "Hisuite", "PotatoNV"],
+      "description": "Standard fastboot. Huawei bootloader unlock requires official unlock code (discontinued post-2018)."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB (USB Debugging)",
+      "usb_ids": [{"vid": 4817, "pid": 21760}],
+      "port_description_patterns": ["ADB", "Android", "Huawei"],
+      "entry_methods": ["Enable USB debugging in Developer Options"],
+      "exit_methods": ["adb disconnect"],
+      "tools": ["adb", "scrcpy"],
+      "description": "Standard ADB mode."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery Mode (eRecovery)",
+      "usb_ids": [],
+      "port_description_patterns": ["recovery", "eRecovery"],
+      "entry_methods": ["adb reboot recovery", "Volym Upp + Power"],
+      "exit_methods": ["Reboot system now"],
+      "tools": ["adb", "Hisuite"],
+      "description": "Stock Recovery or eRecovery for firmware restore."
+    },
+    {
+      "name": "hisilicon_bootrom",
+      "display_name": "HiSilicon USB BootROM (Download Mode)",
+      "usb_ids": [{"vid": 4817, "pid": 23184}],
+      "port_description_patterns": ["HiSilicon", "USB COM", "12D1:5A90"],
+      "entry_methods": ["PotatoNV short test point + USB", "Special USB cable (OEM)"],
+      "exit_methods": ["Power hold 10s"],
+      "tools": ["PotatoNV", "IDT", "HW-OTA"],
+      "description": "HiSilicon BootROM via USB Download Mode. Used for unbricking and FRP bypass on Kirin chips."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "fastboot_erase_frp",
+      "name": "Fastboot erase FRP (requires unlocked bootloader)",
+      "category": "Fastboot",
+      "success_rate": 0.90,
+      "risk_level": "MEDIUM",
+      "prerequisites": ["Unlocked bootloader", "Device in fastboot mode"],
+      "steps": [
+        {"step": 1, "description": "adb reboot bootloader"},
+        {"step": 2, "description": "fastboot erase frp"},
+        {"step": 3, "description": "fastboot reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": ["fastboot:erase frp", "fastboot:reboot"]
+    },
+    {
+      "id": "adb_gms_disable",
+      "name": "ADB disable GMS/GSF",
+      "category": "ADB",
+      "success_rate": 0.75,
+      "risk_level": "LOW",
+      "prerequisites": ["USB debugging enabled", "ADB connected"],
+      "steps": [
+        {"step": 1, "description": "adb shell pm disable-user --user 0 com.google.android.gms"},
+        {"step": 2, "description": "adb shell pm disable-user --user 0 com.google.android.gsf"},
+        {"step": 3, "description": "adb reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": true,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": [
+        "adb_shell:pm disable-user --user 0 com.google.android.gms",
+        "adb_shell:pm disable-user --user 0 com.google.android.gsf",
+        "adb:reboot"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "huawei_official",
+      "name": "Huawei Official Bootloader Unlock (discontinued)",
+      "success_rate": 0.0,
+      "risk_level": "LOW",
+      "prerequisites": ["Huawei unlock code — no longer available from Huawei"],
+      "steps": [{"step": 1, "description": "Huawei discontinued bootloader unlock service in 2018"}],
+      "commands": [],
+      "guide_file": null,
+      "official": true
+    },
+    {
+      "id": "potatonv_brute",
+      "name": "PotatoNV Unlock (Kirin 980)",
+      "success_rate": 0.60,
+      "risk_level": "HIGH",
+      "prerequisites": ["PotatoNV tool", "Test point access", "HiSilicon BootROM mode"],
+      "steps": [
+        {"step": 1, "description": "Enter HiSilicon BootROM via test point + USB"},
+        {"step": 2, "description": "Run PotatoNV — select Kirin 980"},
+        {"step": 3, "description": "Follow PotatoNV prompts for unlock"},
+        {"step": 4, "description": "WARNING: Data wiped"}
+      ],
+      "commands": [],
+      "guide_file": null,
+      "official": false
+    }
+  ],
+  "firehoses": [],
+  "test_points": [
+    {"label": "Kirin BootROM TP", "location": "Under EMI shield near SoC", "coordinates": null, "notes": "Kortslut till GND medan USB ansluts for HiSilicon BootROM. Exakt position varierar per moderkortsversion."}
+  ],
+  "partitions": [
+    {"name": "frp", "purpose": "Factory Reset Protection", "frp_relevant": true, "backup_before_write": true},
+    {"name": "persist", "purpose": "Persistent data", "frp_relevant": true, "backup_before_write": true},
+    {"name": "oeminfo", "purpose": "OEM info (FRP-related)", "frp_relevant": true, "backup_before_write": true},
+    {"name": "userdata", "purpose": "User data", "frp_relevant": true, "backup_before_write": true},
+    {"name": "boot", "purpose": "Kernel + ramdisk", "frp_relevant": false, "backup_before_write": true},
+    {"name": "system", "purpose": "Android OS", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vendor", "purpose": "Vendor modules", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta", "purpose": "Verified Boot metadata", "frp_relevant": false, "backup_before_write": true},
+    {"name": "modem", "purpose": "Baseband firmware", "frp_relevant": false, "backup_before_write": true},
+    {"name": "curversion", "purpose": "Current firmware version", "frp_relevant": false, "backup_before_write": false}
+  ],
+  "at_commands": [
+    {"command": "AT+CFUN=1,1", "description": "Full modem reset", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+EGMR=0,7", "description": "Read IMEI slot 1", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CPIN?", "description": "SIM lock status", "modifies_nvram": false, "risk_level": "LOW"}
+  ],
+  "service_codes": [
+    {"code": "*#06#", "function": "IMEI display"},
+    {"code": "*#*#2846579#*#*", "function": "Project Menu (Huawei engineering mode)"},
+    {"code": "*#*#2846579159#*#*", "function": "Project Menu v2 (background settings)"},
+    {"code": "*#*#4636#*#*", "function": "Phone Information"},
+    {"code": "*#0808#", "function": "USB settings"},
+    {"code": "*#*#1357946#*#*", "function": "Device IMEI and software info"}
+  ],
+  "talkback_shortcuts": {}
+}

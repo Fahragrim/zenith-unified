@@ -29,7 +29,7 @@ class ZenithSettings(BaseSettings):
     backup_dir: Path = Field(default_factory=lambda: Path.home() / ".zenith" / "backups")
 
     # -- ATLAS Knowledge Base --
-    atlas_path: Path = Field(default_factory=lambda: Path(__file__).resolve().parents[2] / "data" / "DEEP_ATLAS.md")
+    atlas_path: Path = Field(default_factory=lambda: Path(__file__).resolve().parent / "data" / "DEEP_ATLAS.md")
 
     # -- ADB --
     adb_path: str | None = None

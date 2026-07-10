@@ -1,6 +1,7 @@
 """Repair Engine — structured repair actions for Android devices.
 
 8 repair types with 15 concrete actions for different SoC families.
+Uses AdapterRegistry dispatch for protocol commands.
 """
 
 from __future__ import annotations
@@ -11,6 +12,9 @@ from enum import Enum
 from typing import Any
 
 from loguru import logger
+
+SafetyConfirmFn = Callable[[str, str], bool]
+"""Callback(action_name, step_description) -> True to proceed, False to skip/skip step."""
 
 
 class RepairType(str, Enum):
@@ -55,11 +59,12 @@ class RepairAction:
 
 
 class RepairEngine:
-    """Registry of repair actions, dispatches to adapters via executor callback."""
+    """Registry of repair actions, dispatches to adapters via AdapterRegistry."""
 
-    def __init__(self, executor: Callable | None = None) -> None:
+    def __init__(self, executor: Callable[..., Any] | None = None, registry: Any = None) -> None:
         self._actions: dict[str, RepairAction] = {}
         self._executor = executor
+        self._registry = registry
         self._register()
 
     def _register(self) -> None:
@@ -75,13 +80,13 @@ class RepairEngine:
             "Qualcomm EDL boot repair", SoCTarget.QUALCOMM, "edl", "critical",
             steps=[RepairStep("Enter EDL", tool_name="edl"),
                    RepairStep("Dump boot backup", "edl:r --partition=boot --outfile=boot_backup.img"),
-                   RepairStep("Flash boot", "edl:w --partition=boot --sid=boot.img"),
+                   RepairStep("Flash boot", "edl:w --partition=boot --sid=boot.img", requires_safety_check=True),
                    RepairStep("Reboot", "edl:reset")]))
 
         self._add(RepairAction("boot_brom", RepairType.BOOT_REPAIR, "Boot Repair via BROM",
             "MTK BROM boot repair", SoCTarget.MEDIATEK, "brom", "critical",
             steps=[RepairStep("Payload bypass", tool_name="mtk"),
-                   RepairStep("Flash boot", "shell:python -c pass"),
+                   RepairStep("Flash boot", "shell:python -c pass", requires_safety_check=True),
                    RepairStep("Reboot", "shell:python -c pass")]))
 
         # Partition fix
@@ -94,7 +99,7 @@ class RepairEngine:
         self._add(RepairAction("part_edl", RepairType.PARTITION_FIX, "Partition Fix via EDL",
             "Fix GPT via EDL", SoCTarget.QUALCOMM, "edl",
             steps=[RepairStep("Print GPT", "edl:printgpt"),
-                   RepairStep("Recreate partitions", tool_name="edl")]))
+                   RepairStep("Recreate partitions", tool_name="edl", requires_safety_check=True)]))
 
         # Factory reset
         self._add(RepairAction("reset_rec", RepairType.FACTORY_RESET, "Factory Reset via Recovery",
@@ -107,38 +112,38 @@ class RepairEngine:
             "Unlock bootloader (wipes all data)", protocol="fastboot", risk_level="critical",
             steps=[RepairStep("Enable OEM unlock", "adb_shell:settings put global development_settings_enabled 1"),
                    RepairStep("Reboot fastboot", "adb:reboot bootloader"),
-                   RepairStep("Unlock", "fastboot:flashing unlock"),
+                   RepairStep("Unlock", "fastboot:flashing unlock", requires_safety_check=True),
                    RepairStep("Reboot", "fastboot:reboot")]))
 
         # FRP bypass
         self._add(RepairAction("frp_edl", RepairType.FRP_BYPASS, "FRP Bypass via EDL",
             "Erase userdata via EDL to remove FRP", SoCTarget.QUALCOMM, "edl",
-            steps=[RepairStep("Erase userdata", "edl:e --partition=userdata"),
+            steps=[RepairStep("Erase userdata", "edl:e --partition=userdata", requires_safety_check=True),
                    RepairStep("Reboot", "edl:reset")]))
 
         self._add(RepairAction("frp_brom", RepairType.FRP_BYPASS, "FRP Bypass via BROM",
             "Erase userdata+md_udc via BROM", SoCTarget.MEDIATEK, "brom",
             steps=[RepairStep("Payload bypass", tool_name="mtk"),
-                   RepairStep("Erase userdata", "shell:python -c pass")]))
+                   RepairStep("Erase userdata", "shell:python -c pass", requires_safety_check=True)]))
 
         # Firmware reflash
         self._add(RepairAction("fw_fastboot", RepairType.FIRMWARE_REFLASH, "Firmware Reflash via Fastboot",
             "Flash stock firmware images", protocol="fastboot",
-            steps=[RepairStep("Flash boot", "fastboot:flash boot boot.img"),
-                   RepairStep("Flash system", "fastboot:flash system system.img"),
+            steps=[RepairStep("Flash boot", "fastboot:flash boot boot.img", requires_safety_check=True),
+                   RepairStep("Flash system", "fastboot:flash system system.img", requires_safety_check=True),
                    RepairStep("Flash vbmeta", "fastboot:flash vbmeta vbmeta.img"),
                    RepairStep("Reboot", "fastboot:reboot")]))
 
         # Baseband fix
         self._add(RepairAction("baseband_fastboot", RepairType.BASEBAND_FIX, "Baseband Fix via Fastboot",
             "Re-flash modem partitions", protocol="fastboot",
-            steps=[RepairStep("Flash modem", "fastboot:flash modem modem.img"),
+            steps=[RepairStep("Flash modem", "fastboot:flash modem modem.img", requires_safety_check=True),
                    RepairStep("Reboot", "fastboot:reboot")]))
 
         # TA restore
         self._add(RepairAction("ta_restore", RepairType.TA_RESTORE, "TA Restore via Newflasher",
             "Restore TA partition (Sony Xperia)", protocol="newflasher", risk_level="critical",
-            steps=[RepairStep("Flash TA backup", "newflasher:flash")]))
+            steps=[RepairStep("Flash TA backup", "newflasher:flash", requires_safety_check=True)]))
 
     def _add(self, action: RepairAction) -> None:
         self._actions[action.id] = action
@@ -157,17 +162,30 @@ class RepairEngine:
             actions = [a for a in actions if a.soc_target in (SoCTarget.ANY, soc)]
         return actions
 
-    def execute(self, action_id: str, executor: Callable | None = None) -> dict[str, Any]:
+    def execute(self, action_id: str, executor: Callable[..., Any] | None = None,
+                serial: str = "",
+                safety_confirm: SafetyConfirmFn | None = None) -> dict[str, Any]:
         action = self._actions.get(action_id)
         if action is None:
             return {"success": False, "error": f"Action not found: {action_id}"}
         exec_fn = executor or self._executor
+        if exec_fn is None and self._registry is not None:
+            exec_fn = self._registry.dispatch
         if exec_fn is None:
             return {"success": False, "error": "No executor configured"}
         results = []
         for step in action.steps:
+            if step.requires_safety_check and safety_confirm is not None and not safety_confirm(action.name, step.description):
+                logger.warning(f"Safety check rejected: {action.name} / {step.description}")
+                results.append({"step": step.description, "command": step.command,
+                                "success": False, "output": "Blocked by safety confirmation"})
+                return {"success": False, "action": action_id, "results": results,
+                        "error": f"Safety check rejected: {step.description}"}
             if step.command:
-                ok, out = exec_fn(step.command)
+                if serial and ":" in (step.command or ""):
+                    ok, out = exec_fn(step.command, serial)
+                else:
+                    ok, out = exec_fn(step.command)
                 results.append({"step": step.description, "command": step.command, "success": ok, "output": out})
                 if not ok:
                     return {"success": False, "action": action_id, "results": results, "error": out}
@@ -176,5 +194,5 @@ class RepairEngine:
         logger.info(f"Repair OK: {action.name}")
         return {"success": True, "action": action_id, "results": results}
 
-    def set_executor(self, fn: Callable) -> None:
+    def set_executor(self, fn: Callable[..., Any]) -> None:
         self._executor = fn

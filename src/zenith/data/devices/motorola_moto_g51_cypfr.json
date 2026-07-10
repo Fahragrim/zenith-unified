@@ -1,0 +1,208 @@
+{
+  "id": "motorola_moto_g51",
+  "manufacturer": "Motorola",
+  "model": "Moto G51 5G",
+  "codename": "cypfr",
+  "soc_vendor": "Qualcomm",
+  "soc_name": "Snapdragon 480+ (SM4350-AC)",
+  "android_version": "Android 11-12",
+  "storage_type": "UFS 2.1",
+  "bootloader_locked": true,
+  "metadata": {
+    "boot_chain": "PBL -> XBL -> ABL -> Linux Kernel",
+    "edl_pid": "0x9008",
+    "edl_vid": "0x05C6",
+    "sahara_edl_supported": true,
+    "firehose_required": true,
+    "frp_location": "persist + frp partition",
+    "sector_size": 4096,
+    "slot_count": 2,
+    "fastboot_allowed": true,
+    "oem_unlock_allowed": true
+  },
+  "modes": [
+    {
+      "name": "edl",
+      "display_name": "Emergency Download Mode (EDL / 9008)",
+      "usb_ids": [{"vid": 1478, "pid": 36872}],
+      "port_description_patterns": ["9008", "QDLoader", "Qualcomm HS-USB"],
+      "entry_methods": [
+        "adb reboot edl (requires root)",
+        "EDL cable (Deep Flash Cable)",
+        "fastboot oem edl"
+      ],
+      "exit_methods": ["Power hold 10s", "edl reset"],
+      "tools": ["edl (bkerler)", "QFIL", "QPST"],
+      "description": "Qualcomm EDL via Sahara + Firehose. Motorola uses standard Qualcomm firehose (no proprietary auth)."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot / Bootloader",
+      "usb_ids": [{"vid": 1478, "pid": 18586}],
+      "port_description_patterns": ["fastboot", "Motorola", "0x05C6"],
+      "entry_methods": [
+        "adb reboot bootloader",
+        "Volym Ner + Power vid uppstart"
+      ],
+      "exit_methods": ["fastboot reboot", "Power hold 10s"],
+      "tools": ["fastboot", "Motorola Flash Tool"],
+      "description": "Standard fastboot mode. Motorola allows bootloader unlock via fastboot oem unlock."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB (USB Debugging)",
+      "usb_ids": [],
+      "port_description_patterns": ["ADB", "Android", "Motorola"],
+      "entry_methods": ["Enable USB debugging in Developer Options"],
+      "exit_methods": ["adb disconnect"],
+      "tools": ["adb", "scrcpy"],
+      "description": "Standard ADB mode."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery Mode",
+      "usb_ids": [],
+      "port_description_patterns": ["recovery"],
+      "entry_methods": [
+        "adb reboot recovery",
+        "Volym Upp + Power vid uppstart"
+      ],
+      "exit_methods": ["Reboot system now"],
+      "tools": ["adb"],
+      "description": "Stock Recovery with ADB sideload."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "edl_frp_erase_firehose",
+      "name": "EDL FRP Erase via Firehose",
+      "category": "EDL",
+      "success_rate": 0.90,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "EDL mode active",
+        "SM4350 firehose programmer",
+        "edl.py tool"
+      ],
+      "steps": [
+        {"step": 1, "description": "Enter EDL mode via fastboot oem edl or EDL cable"},
+        {"step": 2, "description": "Verify: Qualcomm 9008 in Device Manager"},
+        {"step": 3, "description": "Load firehose: edl qfh prog_firehose_ddr_SM4350.mbn"},
+        {"step": 4, "description": "Erase FRP: edl e frp"},
+        {"step": 5, "description": "Erase persist: edl e persist"},
+        {"step": 6, "description": "Reset: edl reset"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": [
+        "edl qfh prog_firehose_ddr_SM4350.mbn",
+        "edl e frp",
+        "edl e persist",
+        "edl reset"
+      ]
+    },
+    {
+      "id": "fastboot_erase_frp",
+      "name": "Fastboot Erase FRP (requires unlocked bootloader)",
+      "category": "Fastboot",
+      "success_rate": 0.95,
+      "risk_level": "LOW",
+      "prerequisites": [
+        "Unlocked bootloader",
+        "Device in fastboot mode"
+      ],
+      "steps": [
+        {"step": 1, "description": "adb reboot bootloader"},
+        {"step": 2, "description": "fastboot erase frp"},
+        {"step": 3, "description": "fastboot erase persist"},
+        {"step": 4, "description": "fastboot reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": [
+        "fastboot erase frp",
+        "fastboot erase persist",
+        "fastboot reboot"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "motorola_official",
+      "name": "Motorola Official Bootloader Unlock",
+      "success_rate": 1.0,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Motorola unlock code from motorola.com/bootloader",
+        "OEM Unlock enabled in Developer Options"
+      ],
+      "steps": [
+        {"step": 1, "description": "Enable OEM Unlock in Developer Options"},
+        {"step": 2, "description": "adb reboot bootloader"},
+        {"step": 3, "description": "fastboot oem get_identifier_token (copy token)"},
+        {"step": 4, "description": "Go to motorola.com/bootloader -> paste token -> get unlock code"},
+        {"step": 5, "description": "fastboot oem unlock UNLOCK_CODE"},
+        {"step": 6, "description": "fastboot reboot"},
+        {"step": 7, "description": "WARNING: Data wiped, warranty void"}
+      ],
+      "commands": [
+        "fastboot oem get_identifier_token",
+        "fastboot oem unlock UNLOCK_CODE"
+      ],
+      "guide_file": null,
+      "official": true
+    }
+  ],
+  "firehoses": [
+    {"filename": "prog_firehose_ddr_SM4350.mbn", "priority": 1, "notes": "Snapdragon 480+ firehose loader"},
+    {"filename": "prog_firehose_ddr_SM4350_AC.mbn", "priority": 2, "notes": "Alternate variant"}
+  ],
+  "test_points": [
+    {
+      "label": "EDL Test Point",
+      "location": "Near USB-C connector, under metal shield",
+      "coordinates": null,
+      "notes": "Kortslut GND till test point while connecting USB. Search XDA for exact coordinates."
+    }
+  ],
+  "partitions": [
+    {"name": "frp", "purpose": "Factory Reset Protection", "frp_relevant": true, "backup_before_write": true},
+    {"name": "persist", "purpose": "Persistent data", "frp_relevant": true, "backup_before_write": true},
+    {"name": "userdata", "purpose": "User data", "frp_relevant": true, "backup_before_write": true},
+    {"name": "boot", "purpose": "Kernel + ramdisk", "frp_relevant": false, "backup_before_write": true},
+    {"name": "system", "purpose": "Android OS", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vendor", "purpose": "Vendor modules", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta", "purpose": "Verified Boot metadata", "frp_relevant": false, "backup_before_write": true},
+    {"name": "dtbo", "purpose": "Device Tree Blob Overlay", "frp_relevant": false, "backup_before_write": true},
+    {"name": "super", "purpose": "Dynamic partitions", "frp_relevant": false, "backup_before_write": true},
+    {"name": "modem", "purpose": "Baseband firmware", "frp_relevant": false, "backup_before_write": true},
+    {"name": "abl", "purpose": "ABL (Application BootLoader)", "frp_relevant": false, "backup_before_write": true},
+    {"name": "xbl", "purpose": "XBL (eXtensible BootLoader)", "frp_relevant": false, "backup_before_write": true},
+    {"name": "tz", "purpose": "TrustZone firmware", "frp_relevant": false, "backup_before_write": true}
+  ],
+  "at_commands": [
+    {"command": "AT+CFUN=1,1", "description": "Full modem reset", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+EGMR=0,7", "description": "Read IMEI slot 1", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CPIN?", "description": "SIM lock status", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+COPS?", "description": "Network operator", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CSQ", "description": "Signal strength", "modifies_nvram": false, "risk_level": "LOW"}
+  ],
+  "service_codes": [
+    {"code": "*#06#", "function": "IMEI display"},
+    {"code": "*#*#4636#*#*", "function": "Phone Information"},
+    {"code": "*#*#2486#*#*", "function": "Engineering Mode (MTK-style, may work on Motorola)"},
+    {"code": "*#*#2663#*#*", "function": "Touch version"},
+    {"code": "*#*#0589#*#*", "function": "Light sensor test"},
+    {"code": "*#*#232338#*#*", "function": "WiFi MAC address"},
+    {"code": "*#*#1472365#*#*", "function": "GPS test"}
+  ],
+  "talkback_shortcuts": {}
+}

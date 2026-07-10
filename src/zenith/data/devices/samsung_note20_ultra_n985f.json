@@ -1,0 +1,205 @@
+{
+  "id": "samsung_note20_ultra",
+  "manufacturer": "Samsung",
+  "model": "Galaxy Note 20 Ultra SM-N985F",
+  "codename": "c1s",
+  "soc_vendor": "Samsung",
+  "soc_name": "Exynos 990",
+  "android_version": "Android 10-13",
+  "bootloader_locked": true,
+  "storage_type": "UFS 3.0",
+  "modes": [
+    {
+      "name": "download",
+      "display_name": "Download Mode (Odin)",
+      "usb_ids": [
+        {
+          "vid": 1256,
+          "pid": 26717
+        }
+      ],
+      "port_description_patterns": [
+        "Samsung Download",
+        "Odin"
+      ],
+      "entry_methods": [
+        "Vol UP + Vol DOWN + Power"
+      ],
+      "exit_methods": [
+        "Power hold 10s"
+      ],
+      "tools": [
+        "Odin3",
+        "Heimdall"
+      ],
+      "description": "Download Mode for Odin firmware flash."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot (begransat)",
+      "usb_ids": [
+        {
+          "vid": 1256,
+          "pid": 26665
+        }
+      ],
+      "port_description_patterns": [
+        "fastboot",
+        "Samsung"
+      ],
+      "entry_methods": [
+        "adb reboot bootloader"
+      ],
+      "exit_methods": [
+        "fastboot reboot"
+      ],
+      "tools": [
+        "fastboot"
+      ],
+      "description": "Fastboot ar begransat pa Exynos."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "ADB",
+        "Samsung"
+      ],
+      "entry_methods": [
+        "Enable USB debugging"
+      ],
+      "exit_methods": [
+        "adb disconnect"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "ADB."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "recovery"
+      ],
+      "entry_methods": [
+        "adb reboot recovery",
+        "Vol UP + Power"
+      ],
+      "exit_methods": [
+        "Reboot system now"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "Stock recovery."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "odin_combination",
+      "name": "Odin Combination FW",
+      "category": "Download",
+      "success_rate": 0.9,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "N985F combination firmware"
+      ],
+      "steps": [],
+      "requires_screen": true,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "commands": []
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "samsung_official",
+      "name": "Samsung Bootloader Unlock",
+      "success_rate": 1.0,
+      "risk_level": "CRITICAL",
+      "prerequisites": [
+        "OEM Unlock enabled"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "description": "Enable OEM Unlock"
+        },
+        {
+          "step": 2,
+          "description": "Vol UP in Download Mode"
+        }
+      ],
+      "commands": [],
+      "official": true
+    }
+  ],
+  "partitions": [
+    {
+      "name": "frp",
+      "purpose": "FRP",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "persistent",
+      "purpose": "Persistent",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "userdata",
+      "purpose": "Data",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "boot",
+      "purpose": "Kernel",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "super",
+      "purpose": "Dynamic",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "vbmeta",
+      "purpose": "VB",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "sboot",
+      "purpose": "SBoot",
+      "frp_relevant": false,
+      "backup_before_write": true
+    }
+  ],
+  "service_codes": [
+    {
+      "code": "*#06#",
+      "function": "IMEI"
+    },
+    {
+      "code": "*#12580*369#",
+      "function": "SW/HW info"
+    },
+    {
+      "code": "*#0808#",
+      "function": "USB settings"
+    },
+    {
+      "code": "*#9900#",
+      "function": "Dump"
+    }
+  ],
+  "talkback_shortcuts": {}
+}

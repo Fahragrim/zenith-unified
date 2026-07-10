@@ -7,6 +7,7 @@ Injekterar AT-kommandon för att trigga modem panic, RAMDUMP, eller Upload Mode.
 from __future__ import annotations
 
 import time
+from typing import Any
 
 CRASH_PAYLOADS = [
     "AT+CFUN=0",       # Disable radio hardware violently
@@ -22,9 +23,9 @@ RISK_WARNING = """WARNING: Voids warranty. May corrupt NVRAM if interrupted.
 Ensure backup of fsc, fsg, modemst1, modemst2 partitions before proceeding."""
 
 
-def scan_and_inject(dry_run: bool = False) -> list[dict]:
+def scan_and_inject(dry_run: bool = False) -> list[dict[str, Any]]:
     """Scan COM ports for Modem/Diag/Serial devices and inject crash payloads."""
-    results: list[dict] = []
+    results: list[dict[str, Any]] = []
     try:
         import serial.tools.list_ports
     except ImportError:

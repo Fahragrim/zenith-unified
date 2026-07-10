@@ -25,8 +25,7 @@ class KnowledgeBase:
     @staticmethod
     def _find_atlas() -> Path:
         candidates = [
-            Path("data/DEEP_ATLAS.md"),
-            Path(__file__).resolve().parents[3] / "data" / "DEEP_ATLAS.md",
+            Path(__file__).resolve().parents[1] / "data" / "DEEP_ATLAS.md",
         ]
         for c in candidates:
             if c.exists():
@@ -76,7 +75,7 @@ class KnowledgeBase:
     def get_secret_codes(self, manufacturer: str) -> dict[str, str]:
         return self.data.secret_codes.get(manufacturer.lower(), {})
 
-    def search(self, query: str) -> dict[str, list]:
+    def search(self, query: str) -> dict[str, list[str]]:
         query_lower = query.lower()
         return {
             "socs": [k for k, v in self.data.socs.items() if query_lower in v.name.lower() or query_lower in v.manufacturer.lower()],

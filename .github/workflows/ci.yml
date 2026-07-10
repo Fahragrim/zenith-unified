@@ -70,11 +70,108 @@ jobs:
           name: dist
           path: dist/
 
+  pyinstaller:
+    name: PyInstaller (${{ matrix.os }})
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install .[dev,gui]
+      - name: Build CLI .exe
+        run: python scripts/build_exe.py
+      - name: Build GUI .exe
+        run: python scripts/build_exe.py --gui
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zenith-cli-windows
+          path: dist/zenith.exe
+      - name: Upload GUI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zenith-gui-windows
+          path: dist/zenith-gui.exe
+
+  docker:
+    name: Docker Build & Push
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: [build]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: Extract metadata (GHCR)
+        id: meta_ghcr
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=ref,event=branch
+            type=sha
+      - name: Extract metadata (Docker Hub)
+        id: meta_dh
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/zenith-unified
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=ref,event=branch
+            type=sha
+      - name: Build and push (GHCR)
+        uses: docker/buildx-action@v3
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta_ghcr.outputs.tags }}
+          labels: ${{ steps.meta_ghcr.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push (Docker Hub)
+        uses: docker/buildx-action@v3
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta_dh.outputs.tags }}
+          labels: ${{ steps.meta_dh.outputs.labels }}
+          cache-from: type=gha
+
   release:
     name: Release to PyPI
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [pyinstaller, docker]
     permissions:
       contents: write
       id-token: write
@@ -83,6 +180,14 @@ jobs:
         with:
           name: dist
           path: dist/
+      - uses: actions/download-artifact@v4
+        with:
+          name: zenith-cli-windows
+          path: artifacts/
+      - uses: actions/download-artifact@v4
+        with:
+          name: zenith-gui-windows
+          path: artifacts/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -91,5 +196,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: |
+            dist/*
+            artifacts/*
           generate_release_notes: true

@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+  # ── CLI ─────────────────────────────────────────────────────────────────
+  zenith:
+    image: ghcr.io/lanfear/zenith-unified:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    volumes:
+      - ./data:/app/data
+    stdin_open: true
+    tty: true
+    entrypoint: ["zenith"]
+    command: ["--help"]
+
+  # ── FastAPI Server ──────────────────────────────────────────────────────
+  zenith-server:
+    image: ghcr.io/lanfear/zenith-unified:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - ZENITH_HOST=0.0.0.0
+    entrypoint: ["zenith-server"]
+    command: ["--host", "0.0.0.0", "--port", "8089"]
+
+  # ── GUI (via Xvfb + VNC) ───────────────────────────────────────────────
+  zenith-gui:
+    image: ghcr.io/lanfear/zenith-unified:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    ports:
+      - "5900:5900"
+    volumes:
+      - ./data:/app/data
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - ZENITH_DATA_DIR=/app/data
+    entrypoint: ["zenith", "gui"]
+    profiles:
+      - gui

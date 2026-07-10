@@ -26,7 +26,7 @@ def token_hunt_logcat(duration: int = 30, output_file: str | None = None) -> lis
     import time as _time
 
     findings: list[dict[str, Any]] = []
-    _tmpdir: tempfile.TemporaryDirectory | None = None
+    _tmpdir: tempfile.TemporaryDirectory[str] | None = None
     if not output_file:
         _tmpdir = tempfile.TemporaryDirectory(prefix="zenith_token_")
         out_path = str(Path(_tmpdir.name) / "findings.txt")

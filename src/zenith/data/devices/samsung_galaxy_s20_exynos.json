@@ -1,0 +1,201 @@
+{
+  "id": "samsung_galaxy_s20_exynos",
+  "manufacturer": "Samsung",
+  "model": "Galaxy S20 (Exynos)",
+  "codename": "x1s",
+  "soc_vendor": "Samsung",
+  "soc_name": "Exynos 990 (98110)",
+  "android_version": "Android 10-13",
+  "storage_type": "UFS 3.0",
+  "bootloader_locked": true,
+  "metadata": {
+    "boot_chain": "PBL -> SBoot -> BL31 -> U-Boot -> Linux Kernel",
+    "odin_protocol_version": "3.15",
+    "download_mode_key": "Vol UP + Vol DOWN + Power",
+    "frp_location": "persistent partition (PIT carved)",
+    "sector_size": 4096,
+    "slot_count": 2,
+    "dm_verity": "enforced (can be disabled via vbmeta patching)",
+    "knox_triggered": false
+  },
+  "modes": [
+    {
+      "name": "download",
+      "display_name": "Download Mode (Odin)",
+      "usb_ids": [{"vid": 1256, "pid": 26717}],
+      "port_description_patterns": ["Samsung Download", "Odin", "G981B"],
+      "entry_methods": [
+        "Vol UP + Vol DOWN + Power vid uppstart",
+        "adb reboot download"
+      ],
+      "exit_methods": ["Power hold 10s", "Odin reset"],
+      "tools": ["Odin3", "Heimdall", "Frija", "SamFirm"],
+      "description": "Samsung Download Mode via Odin-protokollet for firmware-flashing."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot (limited on Exynos)",
+      "usb_ids": [{"vid": 1256, "pid": 26665}],
+      "port_description_patterns": ["fastboot", "Samsung"],
+      "entry_methods": [
+        "adb reboot bootloader (kraver unlocked bootloader)"
+      ],
+      "exit_methods": ["fastboot reboot"],
+      "tools": ["fastboot"],
+      "description": "Fastboot ar begransat pa Exynos S20. Manga partitioner kraver Odin istallet."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB (USB Debugging)",
+      "usb_ids": [],
+      "port_description_patterns": ["ADB", "Android", "Samsung"],
+      "entry_methods": ["Enable USB debugging in Developer Options"],
+      "exit_methods": ["adb disconnect"],
+      "tools": ["adb", "scrcpy"],
+      "description": "Standard ADB mode."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery Mode",
+      "usb_ids": [],
+      "port_description_patterns": ["recovery"],
+      "entry_methods": [
+        "adb reboot recovery",
+        "Vol UP + Power vid uppstart"
+      ],
+      "exit_methods": ["Reboot system now"],
+      "tools": ["adb"],
+      "description": "Stock Recovery with ADB sideload."
+    },
+    {
+      "name": "diag",
+      "display_name": "Samsung Diag Mode",
+      "usb_ids": [{"vid": 1256, "pid": 36925}],
+      "port_description_patterns": ["901D", "Diag", "Samsung Diag"],
+      "entry_methods": [
+        "*#0808# -> DM+MODEM+ADB",
+        "setprop persist.usb.eng 1 (root required)"
+      ],
+      "exit_methods": ["setprop persist.usb.eng 0", "Reboot"],
+      "tools": ["QPST", "QXDM"],
+      "description": "Qualcomm-style Diag Mode (Exynos uses SHannon modem, similar protocol)."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "odin_combination_fw",
+      "name": "Odin Combination Firmware FRP Bypass",
+      "category": "Download",
+      "success_rate": 0.92,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "G981B Combination Firmware (.tar)",
+        "Odin3 v3.14+",
+        "Samsung USB drivers"
+      ],
+      "steps": [
+        {"step": 1, "description": "Download G981B Combination Firmware from SamFW"},
+        {"step": 2, "description": "Boot to Download Mode: Vol UP + Vol DOWN + Power"},
+        {"step": 3, "description": "Open Odin3 -> Load combination in AP slot"},
+        {"step": 4, "description": "Click Start -> wait for PASS"},
+        {"step": 5, "description": "Device boots to Service Mode -> Run Factory Reset"}
+      ],
+      "requires_screen": true,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": []
+    },
+    {
+      "id": "heimdall_frp_erase",
+      "name": "Heimdall FRP Partition Erase",
+      "category": "Download",
+      "success_rate": 0.70,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Heimdall installed",
+        "Device in Download Mode"
+      ],
+      "steps": [
+        {"step": 1, "description": "heimdall print-pit (list partitions)"},
+        {"step": 2, "description": "heimdall flash --FRP frp_blank.img"},
+        {"step": 3, "description": "heimdall close --reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": [
+        "heimdall print-pit",
+        "heimdall flash --FRP frp_blank.img",
+        "heimdall close --reboot"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "samsung_official_knox",
+      "name": "Samsung Official Bootloader Unlock (permanent e-fuse)",
+      "success_rate": 1.0,
+      "risk_level": "CRITICAL",
+      "prerequisites": [
+        "OEM Unlock enabled in Developer Options",
+        "Region allows unlock (not USA/Canada models)"
+      ],
+      "steps": [
+        {"step": 1, "description": "Enable OEM Unlock in Developer Options"},
+        {"step": 2, "description": "Boot to Download Mode: Vol UP + Vol DOWN + Power"},
+        {"step": 3, "description": "Long press Vol UP to unlock bootloader"},
+        {"step": 4, "description": "WARNING: KNOX e-fuse blown! Warranty void + Samsung Pay lost forever"},
+        {"step": 5, "description": "Device wipes data and reboots automatically"}
+      ],
+      "commands": [],
+      "guide_file": null,
+      "official": true
+    }
+  ],
+  "firehoses": [],
+  "test_points": [
+    {
+      "label": "EDL Test Point",
+      "location": "Under motherboard shield near USB-C",
+      "coordinates": null,
+      "notes": "Exynos S20 uses a different EDL mechanism than Qualcomm. Test point may not apply. Use Download Mode instead."
+    }
+  ],
+  "partitions": [
+    {"name": "frp", "purpose": "Factory Reset Protection", "frp_relevant": true, "backup_before_write": true},
+    {"name": "persistent", "purpose": "Persistent storage", "frp_relevant": true, "backup_before_write": true},
+    {"name": "userdata", "purpose": "User data", "frp_relevant": true, "backup_before_write": true},
+    {"name": "boot", "purpose": "Kernel + ramdisk", "frp_relevant": false, "backup_before_write": true},
+    {"name": "system", "purpose": "Android OS", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vendor", "purpose": "Vendor modules", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta", "purpose": "Verified Boot metadata", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta_samsung", "purpose": "Samsung-specific VB meta", "frp_relevant": false, "backup_before_write": true},
+    {"name": "dtbo", "purpose": "Device Tree Blob Overlay", "frp_relevant": false, "backup_before_write": true},
+    {"name": "super", "purpose": "Dynamic partitions", "frp_relevant": false, "backup_before_write": true},
+    {"name": "modem", "purpose": "Shannon baseband firmware", "frp_relevant": false, "backup_before_write": true},
+    {"name": "sboot", "purpose": "Samsung SBoot (primary bootloader)", "frp_relevant": false, "backup_before_write": true}
+  ],
+  "at_commands": [
+    {"command": "AT+CFUN=1,1", "description": "Full modem reset", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+EGMR=0,7", "description": "Read IMEI slot 1", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CPIN?", "description": "SIM lock status", "modifies_nvram": false, "risk_level": "LOW"}
+  ],
+  "service_codes": [
+    {"code": "*#06#", "function": "IMEI display"},
+    {"code": "*#12580*369#", "function": "Software/hardware info"},
+    {"code": "*#0808#", "function": "USB settings (Diag/ADB/Modem)"},
+    {"code": "*#9900#", "function": "System Dump Mode"},
+    {"code": "*#9090#", "function": "Diagnostic configuration"},
+    {"code": "*#*#4636#*#*", "function": "Phone Information"},
+    {"code": "*#0*#", "function": "General Test Mode"},
+    {"code": "*#2663#", "function": "Firmware version"},
+    {"code": "*#85876386#", "function": "Service Mode (OneUI)"}
+  ],
+  "talkback_shortcuts": {}
+}

@@ -14,8 +14,8 @@ from loguru import logger
 
 from zenith.knowledge.device_profile import DeviceProfile
 
-SCHEMA_PATH = Path(__file__).resolve().parents[3] / "data" / "devices" / "_schema.json"
-PROFILES_DIR = Path(__file__).resolve().parents[3] / "data" / "devices"
+SCHEMA_PATH = Path(__file__).resolve().parents[1] / "data" / "devices" / "_schema.json"
+PROFILES_DIR = Path(__file__).resolve().parents[1] / "data" / "devices"
 
 
 class DeviceProfileRegistry:

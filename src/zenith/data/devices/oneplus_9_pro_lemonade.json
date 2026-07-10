@@ -1,0 +1,199 @@
+{
+  "id": "oneplus_9_pro",
+  "manufacturer": "OnePlus",
+  "model": "9 Pro",
+  "codename": "lemonade",
+  "soc_vendor": "Qualcomm",
+  "soc_name": "Snapdragon 888 (SM8350)",
+  "android_version": "Android 11-13",
+  "storage_type": "UFS 3.1",
+  "bootloader_locked": true,
+  "metadata": {
+    "boot_chain": "PBL -> XBL -> ABL -> Linux Kernel",
+    "edl_pid": "0x9008",
+    "edl_vid": "0x05C6",
+    "sahara_edl_supported": true,
+    "firehose_required": true,
+    "frp_location": "persist + frp partition",
+    "sector_size": 4096,
+    "max_download_size": 1048576,
+    "slot_count": 2
+  },
+  "modes": [
+    {
+      "name": "edl",
+      "display_name": "Emergency Download (EDL / 9008)",
+      "usb_ids": [{"vid": 1478, "pid": 36872}],
+      "port_description_patterns": ["9008", "QDLoader", "Qualcomm HS-USB"],
+      "entry_methods": ["adb reboot edl (requires root)", "EDL deep flash cable", "fastboot oem edl"],
+      "exit_methods": ["Power hold 10s", "edl reset"],
+      "tools": ["edl (bkerler)", "QFIL"],
+      "description": "Standard Qualcomm EDL. OnePlus 9 Pro uses standard Firehose."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot / Bootloader",
+      "usb_ids": [{"vid": 1478, "pid": 18586}],
+      "port_description_patterns": ["fastboot", "OnePlus", "SM8350"],
+      "entry_methods": ["adb reboot bootloader", "Volym Ner + Power"],
+      "exit_methods": ["fastboot reboot"],
+      "tools": ["fastboot", "MSM Download Tool"],
+      "description": "Standard fastboot. OnePlus allows easy bootloader unlock via fastboot flashing unlock."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB (USB Debugging)",
+      "usb_ids": [{"vid": 1478, "pid": 20481}],
+      "port_description_patterns": ["ADB", "Android", "OnePlus"],
+      "entry_methods": ["Enable USB debugging in Developer Options"],
+      "exit_methods": ["adb disconnect"],
+      "tools": ["adb", "scrcpy"],
+      "description": "Standard ADB mode."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery Mode",
+      "usb_ids": [],
+      "port_description_patterns": ["recovery"],
+      "entry_methods": ["adb reboot recovery", "Volym Upp + Power"],
+      "exit_methods": ["Reboot system now"],
+      "tools": ["adb"],
+      "description": "Stock Recovery with ADB sideload."
+    },
+    {
+      "name": "diag",
+      "display_name": "Qualcomm Diag Mode",
+      "usb_ids": [{"vid": 1478, "pid": 36925}],
+      "port_description_patterns": ["901D", "Diag"],
+      "entry_methods": ["*#0808# -> DM+MODEM+ADB"],
+      "exit_methods": ["Reboot"],
+      "tools": ["QPST", "QXDM"],
+      "description": "Qualcomm Diag Mode for NVRAM/EFS operations."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "edl_frp_erase_firehose",
+      "name": "EDL FRP Erase via Firehose",
+      "category": "EDL",
+      "success_rate": 0.92,
+      "risk_level": "MEDIUM",
+      "prerequisites": ["EDL mode active", "SM8350 firehose programmer", "edl.py tool"],
+      "steps": [
+        {"step": 1, "description": "Enter EDL: fastboot oem edl or EDL cable"},
+        {"step": 2, "description": "Load firehose: edl qfh prog_firehose_ddr_SM8350.mbn"},
+        {"step": 3, "description": "Erase FRP: edl e frp"},
+        {"step": 4, "description": "Erase persist: edl e persist"},
+        {"step": 5, "description": "Reset: edl reset"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": ["edl:r --partition=frp --outfile=frp_backup.bin", "edl:e --partition=frp", "edl reset"]
+    },
+    {
+      "id": "fastboot_erase_frp",
+      "name": "Fastboot Erase FRP (unlocked bootloader)",
+      "category": "Fastboot",
+      "success_rate": 0.95,
+      "risk_level": "LOW",
+      "prerequisites": ["Unlocked bootloader"],
+      "steps": [
+        {"step": 1, "description": "adb reboot bootloader"},
+        {"step": 2, "description": "fastboot erase frp"},
+        {"step": 3, "description": "fastboot erase persist"},
+        {"step": 4, "description": "fastboot reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": ["fastboot:erase frp", "fastboot:erase persist", "fastboot:reboot"]
+    },
+    {
+      "id": "adb_gms_disable",
+      "name": "ADB disable GMS",
+      "category": "ADB",
+      "success_rate": 0.80,
+      "risk_level": "LOW",
+      "prerequisites": ["USB debugging enabled"],
+      "steps": [
+        {"step": 1, "description": "adb shell pm disable-user --user 0 com.google.android.gms"},
+        {"step": 2, "description": "adb shell pm disable-user --user 0 com.google.android.gsf"},
+        {"step": 3, "description": "adb reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": true,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": [
+        "adb_shell:pm disable-user --user 0 com.google.android.gms",
+        "adb_shell:pm disable-user --user 0 com.google.android.gsf",
+        "adb:reboot"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "oneplus_official",
+      "name": "OnePlus Official Bootloader Unlock",
+      "success_rate": 1.0,
+      "risk_level": "MEDIUM",
+      "prerequisites": ["OEM Unlock enabled in Developer Options"],
+      "steps": [
+        {"step": 1, "description": "Enable OEM Unlock in Settings > Developer Options"},
+        {"step": 2, "description": "adb reboot bootloader"},
+        {"step": 3, "description": "fastboot flashing unlock"},
+        {"step": 4, "description": "Confirm on device (Vol up to confirm)"},
+        {"step": 5, "description": "fastboot reboot"},
+        {"step": 6, "description": "WARNING: Data wiped"}
+      ],
+      "commands": ["fastboot:flashing unlock", "fastboot:reboot"],
+      "guide_file": null,
+      "official": true
+    }
+  ],
+  "firehoses": [
+    {"filename": "prog_firehose_ddr_SM8350.mbn", "priority": 1, "notes": "Snapdragon 888 firehose"},
+    {"filename": "prog_firehose_ddr_SM8350_LA.mbn", "priority": 2, "notes": "Alternate variant"}
+  ],
+  "test_points": [
+    {"label": "EDL TP", "location": "Under motherboard near USB-C", "coordinates": null, "notes": "Use EDL deep flash cable or test point near USB connector."}
+  ],
+  "partitions": [
+    {"name": "frp", "purpose": "Factory Reset Protection", "frp_relevant": true, "backup_before_write": true},
+    {"name": "persist", "purpose": "Persistent data", "frp_relevant": true, "backup_before_write": true},
+    {"name": "userdata", "purpose": "User data", "frp_relevant": true, "backup_before_write": true},
+    {"name": "boot", "purpose": "Kernel + ramdisk", "frp_relevant": false, "backup_before_write": true},
+    {"name": "system", "purpose": "Android OS", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vendor", "purpose": "Vendor modules", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta", "purpose": "Verified Boot metadata", "frp_relevant": false, "backup_before_write": true},
+    {"name": "dtbo", "purpose": "Device Tree Blob Overlay", "frp_relevant": false, "backup_before_write": true},
+    {"name": "super", "purpose": "Dynamic partitions", "frp_relevant": false, "backup_before_write": true},
+    {"name": "modem", "purpose": "Baseband firmware", "frp_relevant": false, "backup_before_write": true},
+    {"name": "abl", "purpose": "ABL bootloader", "frp_relevant": false, "backup_before_write": true},
+    {"name": "xbl", "purpose": "XBL bootloader", "frp_relevant": false, "backup_before_write": true}
+  ],
+  "at_commands": [
+    {"command": "AT+CFUN=1,1", "description": "Full modem reset", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+EGMR=0,7", "description": "Read IMEI slot 1", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CPIN?", "description": "SIM lock status", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+COPS?", "description": "Network operator", "modifies_nvram": false, "risk_level": "LOW"}
+  ],
+  "service_codes": [
+    {"code": "*#06#", "function": "IMEI display"},
+    {"code": "*#*#4636#*#*", "function": "Phone Information"},
+    {"code": "*#808#", "function": "OnePlus Engineering Menu"},
+    {"code": "*#888#", "function": "OnePlus Debug Menu"},
+    {"code": "*#*#3646633#*#*", "function": "Engineering Mode"},
+    {"code": "*#0808#", "function": "USB settings"}
+  ],
+  "talkback_shortcuts": {}
+}

@@ -1,0 +1,288 @@
+{
+  "id": "sony_xperia_1_iii",
+  "manufacturer": "Sony",
+  "model": "Xperia 1 III",
+  "codename": "pdx215",
+  "soc_vendor": "Qualcomm",
+  "soc_name": "Snapdragon 888 (SM8350)",
+  "android_version": "Android 11-13",
+  "bootloader_locked": true,
+  "storage_type": "UFS 3.0",
+  "modes": [
+    {
+      "name": "flashmode",
+      "display_name": "Sony Flashmode (S1 Protocol)",
+      "usb_ids": [
+        {
+          "vid": 4046,
+          "pid": 44517
+        }
+      ],
+      "port_description_patterns": [
+        "S1",
+        "SA0001",
+        "0FCE:ADE5"
+      ],
+      "entry_methods": [
+        "Volym Ner + USB",
+        "adb reboot bootloader"
+      ],
+      "exit_methods": [
+        "Power hold 10s"
+      ],
+      "tools": [
+        "newflasher",
+        "Emma",
+        "Flashtool"
+      ],
+      "description": "Sony S1-protokoll for firmware-flashing."
+    },
+    {
+      "name": "edl",
+      "display_name": "EDL 9008",
+      "usb_ids": [
+        {
+          "vid": 4046,
+          "pid": 36872
+        }
+      ],
+      "port_description_patterns": [
+        "9008",
+        "QDLoader"
+      ],
+      "entry_methods": [
+        "Test points",
+        "Youkiloon cable"
+      ],
+      "exit_methods": [
+        "Power hold 10s"
+      ],
+      "tools": [
+        "edl",
+        "QFIL"
+      ],
+      "description": "Qualcomm EDL via test points."
+    },
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot",
+      "usb_ids": [
+        {
+          "vid": 4046,
+          "pid": 3550
+        }
+      ],
+      "port_description_patterns": [
+        "fastboot",
+        "0FCE:0DDE"
+      ],
+      "entry_methods": [
+        "adb reboot bootloader"
+      ],
+      "exit_methods": [
+        "fastboot reboot"
+      ],
+      "tools": [
+        "fastboot"
+      ],
+      "description": "Standard fastboot."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "ADB",
+        "Sony"
+      ],
+      "entry_methods": [
+        "Enable USB debugging"
+      ],
+      "exit_methods": [
+        "adb disconnect"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "ADB mode."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery",
+      "usb_ids": [],
+      "port_description_patterns": [
+        "recovery"
+      ],
+      "entry_methods": [
+        "adb reboot recovery"
+      ],
+      "exit_methods": [
+        "Reboot system now"
+      ],
+      "tools": [
+        "adb"
+      ],
+      "description": "Stock recovery."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "flashmode_newflasher",
+      "name": "Newflasher FRP erase",
+      "category": "Flashmode",
+      "success_rate": 0.85,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Flashmode",
+        "newflasher.exe"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "description": "Boot to Flashmode (Vol Down + USB)"
+        },
+        {
+          "step": 2,
+          "description": "Run newflasher with FRP-clear firmware"
+        }
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": [
+        "newflasher:flash frp_clear"
+      ]
+    },
+    {
+      "id": "edl_frp_erase",
+      "name": "EDL FRP Erase",
+      "category": "EDL",
+      "success_rate": 0.8,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "EDL via test points",
+        "SDM845 firehose"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "description": "Enter EDL"
+        },
+        {
+          "step": 2,
+          "description": "edl e frp"
+        }
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": true,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": [
+        "edl:e --partition=frp",
+        "edl:reset"
+      ]
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "sony_official",
+      "name": "Sony Open Devices Unlock",
+      "success_rate": 1.0,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "Sony developer.world key"
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "description": "Get unlock key from Sony"
+        },
+        {
+          "step": 2,
+          "description": "fastboot oem unlock 0xKEY"
+        }
+      ],
+      "commands": [
+        "fastboot:oem unlock"
+      ],
+      "official": true
+    }
+  ],
+  "partitions": [
+    {
+      "name": "frp",
+      "purpose": "FRP",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "TA",
+      "purpose": "DRM keys",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "userdata",
+      "purpose": "Data",
+      "frp_relevant": true,
+      "backup_before_write": true
+    },
+    {
+      "name": "boot",
+      "purpose": "Kernel",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "system",
+      "purpose": "System",
+      "frp_relevant": false,
+      "backup_before_write": true
+    },
+    {
+      "name": "vendor",
+      "purpose": "Vendor",
+      "frp_relevant": false,
+      "backup_before_write": true
+    }
+  ],
+  "firehoses": [
+    {
+      "filename": "prog_firehose_ddr_SM8350.mbn",
+      "priority": 1,
+      "notes": "SDM845/SM8350"
+    }
+  ],
+  "at_commands": [
+    {
+      "command": "AT+CFUN=1,1",
+      "description": "Modem reset",
+      "modifies_nvram": false,
+      "risk_level": "LOW"
+    }
+  ],
+  "service_codes": [
+    {
+      "code": "*#06#",
+      "function": "IMEI"
+    },
+    {
+      "code": "*#*#7378423#*#*",
+      "function": "Service menu"
+    },
+    {
+      "code": "*#*#4636#*#*",
+      "function": "Phone info"
+    }
+  ],
+  "talkback_shortcuts": {
+    "Tab": "Next",
+    "Shift+Tab": "Previous",
+    "Enter": "Select"
+  }
+}

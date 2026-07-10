@@ -6,7 +6,7 @@ Supports indexing DEEP_ATLAS knowledge and semantic search with keyword fallback
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from loguru import logger
 
@@ -57,7 +57,18 @@ class RAGEngine:
         return self._collection
 
     def is_available(self) -> bool:
-        return self._get_collection() is not None
+        try:
+            collection = self._get_collection()
+            if collection is not None:
+                return True
+        except Exception:
+            pass
+        # Fallback: check if chromadb is importable
+        try:
+            import importlib.util
+            return importlib.util.find_spec("chromadb") is not None
+        except ImportError:
+            return False
 
     def index_knowledge(self, kb_data: list[dict[str, Any]]) -> int:
         """Index knowledge chunks (from DEEP_ATLAS parser) into ChromaDB."""
@@ -183,6 +194,6 @@ class RAGEngine:
         if collection is None:
             return 0
         try:
-            return collection.count()
+            return cast(int, collection.count())
         except Exception:
             return 0

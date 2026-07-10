@@ -1,7 +1,10 @@
 """PWA stub — Cyberpunk web interface for Zenith."""
 
+import tempfile
 import webbrowser
 from pathlib import Path
+
+from zenith.core.discovery import run_discovery
 
 HTML = """<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -15,9 +18,7 @@ h1{color:#89b4fa}pre{background:#313244;padding:16px;border-radius:8px}
 
 
 def launch_pwa() -> None:
-    import subprocess
-    import tempfile
     p = Path(tempfile.gettempdir()) / "zenith_pwa.html"
-    result = subprocess.run("zenith discover", shell=True, capture_output=True, text=True)
-    p.write_text(HTML.replace("$(zenith discover)", result.stdout or "No devices found"), encoding="utf-8")
+    result = run_discovery()
+    p.write_text(HTML.replace("$(zenith discover)", result.to_display_text()), encoding="utf-8")
     webbrowser.open(str(p))

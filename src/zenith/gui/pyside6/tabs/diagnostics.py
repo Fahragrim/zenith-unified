@@ -25,8 +25,12 @@ class DiagnosticsTab(QWidget):
     def _setup(self) -> None:
         layout = QVBoxLayout(self)
         layout.setSpacing(8)
-        layout.addWidget(QLabel("Diagnostics Engine", objectName="title"))
-        layout.addWidget(QLabel("Bayesian fault analysis with DEEP_ATLAS knowledge base.", property="class"))
+        title_lbl = QLabel("Diagnostics Engine")
+        title_lbl.setProperty("class", "title")
+        layout.addWidget(title_lbl)
+        subtitle_lbl = QLabel("Bayesian fault analysis with DEEP_ATLAS knowledge base.")
+        subtitle_lbl.setProperty("class", "class")
+        layout.addWidget(subtitle_lbl)
 
         # Symptom input
         grp = QGroupBox("Select Symptom")

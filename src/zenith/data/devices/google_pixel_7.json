@@ -1,0 +1,203 @@
+{
+  "id": "google_pixel_7",
+  "manufacturer": "Google",
+  "model": "Pixel 7",
+  "codename": "panther",
+  "soc_vendor": "Google",
+  "soc_name": "Google Tensor G2 (GS201)",
+  "android_version": "Android 13-14",
+  "storage_type": "UFS 3.1",
+  "bootloader_locked": true,
+  "metadata": {
+    "boot_chain": "PBL -> XBL -> ABL -> Linux Kernel",
+    "soc_arch": "Exynos 2.0 (5nm)",
+    "cpu_cores": "2x Cortex-X1 + 2x Cortex-A78 + 4x Cortex-A55",
+    "gpu": "Mali-G710 MP7",
+    "secure_element": "Titan M2",
+    "avb_version": "AVB 2.0 (dm-verity enforced)",
+    "vbmeta_digest_required": true,
+    "edl_support": "Yes (Qualcomm-style EDL via Samsung GDSA)",
+    "max_download_size": 1048576,
+    "sector_size": 4096,
+    "slot_count": 2,
+    "usb_vid": "0x18D1"
+  },
+  "modes": [
+    {
+      "name": "fastboot",
+      "display_name": "Fastboot / Bootloader",
+      "usb_ids": [{"vid": 6353, "pid": 20192}],
+      "port_description_patterns": ["fastboot", "Google", "18D1:4EE0"],
+      "entry_methods": ["adb reboot bootloader", "Volym Ner + Power vid uppstart"],
+      "exit_methods": ["fastboot reboot", "Power hold 10s"],
+      "tools": ["fastboot", "Android Flash Tool"],
+      "description": "Standard fastboot. Pixel 7 has locked bootloader by default."
+    },
+    {
+      "name": "edl",
+      "display_name": "EDL (GDSA Protocol)",
+      "usb_ids": [{"vid": 6353, "pid": 36752}],
+      "port_description_patterns": ["9008", "GDSA", "Google EDL", "GS201"],
+      "entry_methods": ["adb reboot edl (requires root)", "Test point on motherboard"],
+      "exit_methods": ["Power hold 10s", "edl reset"],
+      "tools": ["edl (bkerler)", "shusboot", "pixel-firmware-extractor"],
+      "description": "Google Tensor G2 EDL via GDSA (Google Debug Security Architecture)."
+    },
+    {
+      "name": "adb",
+      "display_name": "ADB (USB Debugging)",
+      "usb_ids": [{"vid": 6353, "pid": 3328}],
+      "port_description_patterns": ["ADB", "Android", "Google Tensor"],
+      "entry_methods": ["Enable USB debugging in Developer Options"],
+      "exit_methods": ["adb disconnect"],
+      "tools": ["adb", "scrcpy"],
+      "description": "Standard ADB mode."
+    },
+    {
+      "name": "recovery",
+      "display_name": "Recovery Mode",
+      "usb_ids": [],
+      "port_description_patterns": ["recovery", "Google"],
+      "entry_methods": ["adb reboot recovery", "Volym Upp + Power vid uppstart"],
+      "exit_methods": ["Reboot system now"],
+      "tools": ["adb", "fastboot"],
+      "description": "Stock Android Recovery with ADB sideload."
+    },
+    {
+      "name": "sideload",
+      "display_name": "ADB Sideload",
+      "usb_ids": [],
+      "port_description_patterns": ["sideload"],
+      "entry_methods": ["Boot to Recovery -> Apply update from ADB", "adb sideload ota_update.zip"],
+      "exit_methods": ["adb reboot"],
+      "tools": ["adb"],
+      "description": "ADB Sideload via recovery for manual OTA updates."
+    }
+  ],
+  "frp_methods": [
+    {
+      "id": "fastboot_erase_frp",
+      "name": "Fastboot erase FRP (unlocked bootloader required)",
+      "category": "Fastboot",
+      "success_rate": 0.95,
+      "risk_level": "LOW",
+      "prerequisites": ["Unlocked bootloader", "Device in fastboot mode"],
+      "steps": [
+        {"step": 1, "description": "adb reboot bootloader"},
+        {"step": 2, "description": "fastboot erase frp"},
+        {"step": 3, "description": "fastboot reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": ["fastboot erase frp", "fastboot reboot"]
+    },
+    {
+      "id": "adb_gms_disable",
+      "name": "ADB: Disable GMS/GSF",
+      "category": "ADB",
+      "success_rate": 0.80,
+      "risk_level": "LOW",
+      "prerequisites": ["USB debugging enabled", "ADB connection working"],
+      "steps": [
+        {"step": 1, "description": "adb shell pm disable-user --user 0 com.google.android.gms"},
+        {"step": 2, "description": "adb shell pm disable-user --user 0 com.google.android.gsf"},
+        {"step": 3, "description": "adb reboot"}
+      ],
+      "requires_screen": false,
+      "requires_adb": true,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": [
+        "adb shell pm disable-user --user 0 com.google.android.gms",
+        "adb shell pm disable-user --user 0 com.google.android.gsf",
+        "adb reboot"
+      ]
+    },
+    {
+      "id": "factory_reset_sideload",
+      "name": "Factory Reset via Recovery Sideload",
+      "category": "Recovery",
+      "success_rate": 0.70,
+      "risk_level": "LOW",
+      "prerequisites": ["Device in recovery mode"],
+      "steps": [
+        {"step": 1, "description": "Boot to recovery mode"},
+        {"step": 2, "description": "Select Wipe data/factory reset"},
+        {"step": 3, "description": "Reboot system"}
+      ],
+      "requires_screen": true,
+      "requires_adb": false,
+      "requires_edl": false,
+      "requires_root": false,
+      "cost": "Free",
+      "guide_file": null,
+      "commands": []
+    }
+  ],
+  "unlock_methods": [
+    {
+      "id": "google_official",
+      "name": "Google Official Bootloader Unlock",
+      "success_rate": 1.0,
+      "risk_level": "MEDIUM",
+      "prerequisites": [
+        "OEM Unlock enabled in Developer Options",
+        "Device in fastboot mode",
+        "Google account on device (for verification)"
+      ],
+      "steps": [
+        {"step": 1, "description": "Enable OEM Unlock in Settings > Developer Options"},
+        {"step": 2, "description": "adb reboot bootloader"},
+        {"step": 3, "description": "fastboot flashing unlock"},
+        {"step": 4, "description": "Confirm on device screen (Vol up to unlock)"},
+        {"step": 5, "description": "fastboot reboot"},
+        {"step": 6, "description": "WARNING: Data wiped! Device will factory reset."}
+      ],
+      "commands": ["fastboot flashing unlock", "fastboot reboot"],
+      "guide_file": null,
+      "official": true
+    }
+  ],
+  "firehoses": [],
+  "test_points": [
+    {
+      "label": "EDL Test Point",
+      "location": "Near USB-C connector on motherboard underside",
+      "coordinates": null,
+      "notes": "Pixel 7 EDL test point requires disassembly. Remove motherboard shield. Check XDA/IFixit for exact coordinates."
+    }
+  ],
+  "partitions": [
+    {"name": "frp", "purpose": "Factory Reset Protection", "frp_relevant": true, "backup_before_write": true},
+    {"name": "userdata", "purpose": "User data", "frp_relevant": true, "backup_before_write": true},
+    {"name": "boot", "purpose": "Kernel + ramdisk", "frp_relevant": false, "backup_before_write": true},
+    {"name": "system", "purpose": "Android OS (logical)", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vendor", "purpose": "Vendor modules (logical)", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta", "purpose": "Verified Boot metadata", "frp_relevant": false, "backup_before_write": true},
+    {"name": "vbmeta_system", "purpose": "System VB metadata", "frp_relevant": false, "backup_before_write": true},
+    {"name": "dtbo", "purpose": "Device Tree Blob Overlay", "frp_relevant": false, "backup_before_write": true},
+    {"name": "super", "purpose": "Dynamic partitions", "frp_relevant": false, "backup_before_write": true},
+    {"name": "modem", "purpose": "Baseband firmware", "frp_relevant": false, "backup_before_write": true},
+    {"name": "misc", "purpose": "Boot context data", "frp_relevant": false, "backup_before_write": false}
+  ],
+  "at_commands": [
+    {"command": "AT+CFUN=1,1", "description": "Full modem reset", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+EGMR=0,7", "description": "Read IMEI slot 1", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+CPIN?", "description": "SIM lock status", "modifies_nvram": false, "risk_level": "LOW"},
+    {"command": "AT+COPS?", "description": "Network operator", "modifies_nvram": false, "risk_level": "LOW"}
+  ],
+  "service_codes": [
+    {"code": "*#06#", "function": "IMEI display"},
+    {"code": "*#*#4636#*#*", "function": "Phone Information"},
+    {"code": "*#*#7465625#*#*", "function": "SIM lock status"},
+    {"code": "*#*#232338#*#*", "function": "WiFi MAC address"},
+    {"code": "*#*#1472365#*#*", "function": "GPS test"}
+  ],
+  "talkback_shortcuts": {}
+}

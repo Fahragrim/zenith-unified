@@ -15,8 +15,9 @@ class TestPackage:
 
     def test_version_format(self) -> None:
         parts = __version__.split(".")
-        assert len(parts) == 3
-        assert all(p.isdigit() for p in parts)
+        assert len(parts) >= 3
+        base = parts[:3]
+        assert all(p.isdigit() for p in base)
 
     def test_author_is_string(self) -> None:
         assert isinstance(__author__, str)

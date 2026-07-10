@@ -1,4 +1,4 @@
-"""Adapter module exports — all 13 adapters."""
+"""Adapter module exports — all 13 adapters + USB transport classes."""
 
 from zenith.adapters.adb import ADBAdapter
 from zenith.adapters.allwinner_fel import AllwinnerFELAdapter
@@ -14,6 +14,7 @@ from zenith.adapters.samsung_odin import SamsungOdinAdapter
 from zenith.adapters.sony_s1 import SonyS1Adapter
 from zenith.adapters.uart import UARTAdapter
 from zenith.adapters.unisoc_sprd import UnisocSPRDAdapter
+from zenith.adapters.usb_transport import BromUsbTransport, EdlUsbTransport
 
 __all__ = [
     "AdapterProtocol", "AdapterResult", "AdapterRegistry", "get_adapter_registry",
@@ -21,4 +22,5 @@ __all__ = [
     "AllwinnerFELAdapter", "AppleDFUAdapter", "DiagATAdapter",
     "MediaTekBROMAdapter", "QualcommEDLAdapter", "RockchipAdapter",
     "SamsungOdinAdapter", "SonyS1Adapter", "UARTAdapter", "UnisocSPRDAdapter",
+    "EdlUsbTransport", "BromUsbTransport",
 ]

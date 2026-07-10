@@ -138,9 +138,9 @@ class TestDiscoverCommand:
     @patch("zenith.core.discovery.run_discovery")
     def test_discover(self, mock_disc: MagicMock, runner: CliRunner) -> None:
         mock_result = MagicMock()
-        mock_result.to_display_text.return_value = "Found: 1 device(s)"
+        mock_result.summary_lines = ["=== ZENITH DEVICE DISCOVERY ===", "", "[ADB]", "  emulator-5554  device"]
         mock_disc.return_value = mock_result
-        result = runner.invoke(main, ["discover"])
+        result = runner.invoke(main, ["discover", "--no-color"])
         assert result.exit_code == 0
         assert "device" in result.output.lower()
 
@@ -148,7 +148,7 @@ class TestDiscoverCommand:
     def test_discover_error(self, mock_disc: MagicMock, runner: CliRunner) -> None:
         result = runner.invoke(main, ["discover"])
         assert result.exit_code == 1
-        assert "Error" in result.output
+        assert "Discovery error" in result.output
 
 
 class TestAuditCommands:

@@ -25,9 +25,12 @@ class ArsenalTab(QWidget):
     def _setup(self) -> None:
         layout = QVBoxLayout(self)
         layout.setSpacing(8)
-        layout.addWidget(QLabel("Knowledge Arsenal", objectName="title"))
-        layout.addWidget(QLabel("Browse DEEP_ATLAS: SoCs, protocols, playbooks, tools, secret codes.",
-                                property="class"))
+        title_lbl = QLabel("Knowledge Arsenal")
+        title_lbl.setProperty("class", "title")
+        layout.addWidget(title_lbl)
+        subtitle_lbl = QLabel("Browse DEEP_ATLAS: SoCs, protocols, playbooks, tools, secret codes.")
+        subtitle_lbl.setProperty("class", "class")
+        layout.addWidget(subtitle_lbl)
 
         # Search
         search_row = QHBoxLayout()

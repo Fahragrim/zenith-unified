@@ -2,12 +2,31 @@
 
 **AI-powered USB/ADB tool for Android phone repair, data recovery, diagnostics, and flashing.**
 
+[![CI](https://github.com/lanfear/zenith-unified/actions/workflows/ci.yml/badge.svg)](https://github.com/lanfear/zenith-unified/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/lanfear-zenith)](https://pypi.org/project/lanfear-zenith/)
+[![Docker](https://img.shields.io/docker/v/lanfear/zenith-unified?label=docker)](https://hub.docker.com/r/lanfear/zenith-unified)
+[![Python](https://img.shields.io/pypi/pyversions/lanfear-zenith)](https://pypi.org/project/lanfear-zenith/)
+[![License](https://img.shields.io/pypi/l/lanfear-zenith)](LICENSE)
+
+Requires **Python >= 3.10**.
+
 ```bash
+# Install from PyPI
+pip install lanfear-zenith
+
+# Or from source
 pip install -e .
-zenith discover          # Alla anslutna enheter
-zenith diagnose bootloop # Bayesian diagnostik
-zenith triage --protocol edl  # Interaktivt felsökningsträd
-zenith frp-bypass        # FRP-bypass (EDL/BROM)
+
+# With extras
+pip install lanfear-zenith[gui]     # Desktop GUI
+pip install lanfear-zenith[ai]      # AI assistant
+pip install lanfear-zenith[server]  # FastAPI server
+
+# Quick start
+zenith discover          # Connected devices
+zenith diagnose bootloop # Bayesian diagnostics
+zenith triage --protocol edl  # Interactive troubleshooting
+zenith frp-bypass        # FRP bypass
 zenith gui               # Desktop GUI (PySide6)
 ```
 
@@ -16,14 +35,14 @@ zenith gui               # Desktop GUI (PySide6)
 ```
 zenith/
 ├── core/          Device ABC, event bus, policy engine, audit log, consent gate, backup manager, discovery
-├── adapters/      13 transportadaptrar: ADB, Fastboot, Qualcomm EDL, MTK BROM, Unisoc SPRD (native HDLC), Samsung Odin, Sony S1, Diag/AT, UART, Apple DFU, Rockchip, Allwinner FEL
-├── knowledge/     DEEP_ATLAS.md parser, SoC-profiler, 13 YAML-reparationsspelböcker, secret codes, tool matrix
-├── engines/       Bayesian diagnostics, interaktivt triage-träd (17 noder), repair engine (10 actions), playbook executor (7 kommandoprefix)
-├── ai/            Provider abstraction (Ollama / LM Studio / Mistral), intent parser, RAG (ChromaDB), MCP server (9 tools)
-├── tools/         Sahara ping, fastboot OEM fuzzer, token hunter (logcat)
-├── cli/           12 Click-kommandon: discover, ai, diagnose, triage, playbooks, repair, arsenal, audit, server, mcp, gui, version
+├── adapters/      13 adapters + AdapterRegistry (auto-registration, dispatch)
+├── knowledge/     DEEP_ATLAS.md parser, SoC-profiler, 14 YAML playbooks, device profiles, secret codes
+├── engines/       Bayesian diagnostics, triage tree (17 nodes), repair engine (10 actions), playbook executor (adapter-aware), flash engine (EDL/BROM pipelines)
+├── ai/            Provider abstraction (Ollama / LM Studio / Mistral), intent parser, RAG (ChromaDB), MCP server
+├── tools/         Sahara ping, fastboot OEM fuzzer, token hunter, panic injector, VCC matrix, arsenal shell
+├── cli/           14 Click commands: discover, ai, diagnose, triage, playbooks, repair, flash, arsenal, audit, server, mcp, gui, version, profiles
 ├── gui/           PySide6 desktop (Dashboard, Diagnostics, Repair, Arsenal) — Catppuccin Mocha dark theme
-└── server/        FastAPI (6 endpoints), MCP tool-calling protokoll
+└── server/        FastAPI, MCP tool-calling protocol
 ```
 
 ## Installation
@@ -110,12 +129,40 @@ Filnamn | Symptom | SoC | Risk
 `sony-xz2-frp-newflasher.yaml` | frp-lock | sony | medium
 `nokia-c32-frp-bypass.yaml` | frp-lock | unisoc | high
 
+## PyInstaller (Windows .exe)
+
+Requires Python >= 3.10.
+
+```bash
+# Using Python 3.12 (recommended):
+py -3.12 -m pip install .[dev,gui]
+py -3.12 scripts/build_exe.py          # CLI .exe (dist/zenith.exe)
+py -3.12 scripts/build_exe.py --gui    # GUI .exe (dist/zenith-gui.exe)
+
+# Or if python3 points to 3.10+:
+python3 scripts/build_exe.py
+```
+
+## Docker
+
+```bash
+docker compose -f docker/docker-compose.yml run --rm zenith --help
+docker compose -f docker/docker-compose.yml run --rm zenith discover
+docker compose -f docker/docker-compose.yml --profile gui up zenith-gui
+```
+
+Or build & publish to GHCR:
+```bash
+docker build -f docker/Dockerfile -t ghcr.io/lanfear/zenith-unified:latest .
+docker run --rm -it --device /dev/bus/usb ghcr.io/lanfear/zenith-unified discover
+```
+
 ## Test
 
 ```bash
-pytest tests/           # 136 tester
-ruff check src/         # Linting (0 errors)
-mypy src/               # Type check
+pytest tests/unit/       # 476 unit tests
+ruff check src/          # Linting
+mypy src/                # Type check
 ```
 
 ## Licens
